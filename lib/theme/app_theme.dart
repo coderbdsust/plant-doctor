@@ -11,6 +11,10 @@ class AppTheme {
   static const Color terracotta = Color(0xFFC1663B);
   static const String fontFamily = 'NotoSansBengali';
 
+  /// Stitch-style hero gradients used across feature cards.
+  static const List<Color> heroGradient = <Color>[Color(0xFF156B36), deep];
+  static const List<Color> accentGradient = <Color>[seed, leaf];
+
   static ThemeData light() => _build(Brightness.light);
   static ThemeData dark() => _build(Brightness.dark);
 
@@ -82,14 +86,31 @@ class AppTheme {
         iconTheme: IconThemeData(color: scheme.onSurfaceVariant),
       ),
       cardTheme: CardThemeData(
-        elevation: 0,
+        elevation: 1,
         margin: EdgeInsets.zero,
+        shadowColor: Colors.black.withValues(alpha: 0.06),
+        surfaceTintColor: Colors.transparent,
         color: isLight ? const Color(0xFFFCFFFB) : const Color(0xFF161E16),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(20),
           side: BorderSide(
-            color: isLight ? const Color(0xFFD5E4D1) : const Color(0xFF2B382B),
+            color: isLight
+                ? const Color(0xFFDCE9D6)
+                : const Color(0xFF2B382B),
           ),
+        ),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: isLight ? Colors.white : const Color(0xFF161E16),
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(22),
+        ),
+        titleTextStyle: TextStyle(
+          fontFamily: fontFamily,
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: scheme.onSurface,
         ),
       ),
       chipTheme: ChipThemeData(
@@ -161,7 +182,7 @@ class AppTheme {
           foregroundColor: scheme.onPrimary,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(16),
           ),
           textStyle: const TextStyle(
             fontFamily: fontFamily,
@@ -173,10 +194,10 @@ class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: scheme.primary,
-          side: BorderSide(color: scheme.primary.withValues(alpha: 0.5)),
+          side: BorderSide(color: scheme.primary.withValues(alpha: 0.45)),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(16),
           ),
           textStyle: const TextStyle(
             fontFamily: fontFamily,

@@ -133,84 +133,153 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme scheme = theme.colorScheme;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: <Color>[
-                      AppTheme.seed,
-                      AppTheme.leaf,
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(Icons.park, color: Colors.white, size: 26),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      'Plant Doctor',
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.3,
-                      ),
-                    ),
-                    Text(
-                      'ছাদ বাগান ও উদ্ভিদ পরিচর্যা গাইড',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: scheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                tooltip: 'সেটিংস',
-                onPressed: onOpenSettings,
-                icon: const Icon(Icons.settings_outlined),
-              ),
-            ],
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(18, 18, 12, 18),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: AppTheme.heroGradient,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-          const SizedBox(height: 14),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              color: scheme.primaryContainer.withValues(alpha: 0.4),
-              borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: AppTheme.deep.withValues(alpha: 0.35),
+              blurRadius: 22,
+              offset: const Offset(0, 10),
             ),
-            child: Row(
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Icon(Icons.auto_stories_outlined,
-                    size: 18, color: scheme.primary),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    '$chapterCountটি অধ্যায় • $stepCountটি ধাপে ভাগ করা',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: scheme.onSurface,
-                      fontWeight: FontWeight.w600,
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.28),
                     ),
                   ),
+                  child: const Icon(Icons.park, color: Colors.white, size: 26),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        'Plant Doctor',
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.3,
+                          color: Colors.white,
+                        ),
+                      ),
+                      Text(
+                        'ছাদ বাগান ও উদ্ভিদ পরিচর্যা গাইড',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: Colors.white.withValues(alpha: 0.82),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                _RoundIconButton(
+                  icon: Icons.settings_outlined,
+                  tooltip: 'সেটিংস',
+                  onTap: onOpenSettings,
                 ),
               ],
             ),
+            const SizedBox(height: 16),
+            Row(
+              children: <Widget>[
+                _HeroStat(
+                  icon: Icons.menu_book_outlined,
+                  label: '$chapterCountটি অধ্যায়',
+                ),
+                const SizedBox(width: 10),
+                _HeroStat(
+                  icon: Icons.format_list_numbered,
+                  label: '$stepCountটি ধাপ',
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HeroStat extends StatelessWidget {
+  const _HeroStat({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(icon, size: 14, color: Colors.white.withValues(alpha: 0.9)),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _RoundIconButton extends StatelessWidget {
+  const _RoundIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: IconButton(
+        tooltip: tooltip,
+        onPressed: onTap,
+        style: IconButton.styleFrom(
+          backgroundColor: Colors.white.withValues(alpha: 0.14),
+          foregroundColor: Colors.white,
+          shape: const CircleBorder(
+            side: BorderSide(color: Colors.white24),
+          ),
+        ),
+        icon: Icon(icon, size: 20),
       ),
     );
   }
@@ -308,26 +377,37 @@ class _ActionCard extends StatelessWidget {
 
     return Material(
       color: theme.cardTheme.color,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(18),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(18),
             border: Border.all(color: theme.dividerColor),
           ),
           child: Row(
             children: <Widget>[
               Container(
-                width: 38,
-                height: 38,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(11),
+                  gradient: const LinearGradient(
+                    colors: AppTheme.accentGradient,
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: <BoxShadow>[
+                    BoxShadow(
+                      color: AppTheme.seed.withValues(alpha: 0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-                child: Icon(icon, color: color, size: 20),
+                child: Icon(icon, color: Colors.white, size: 20),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -335,8 +415,14 @@ class _ActionCard extends StatelessWidget {
                   label,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w700,
+                    height: 1.35,
                   ),
                 ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 15,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ],
           ),
@@ -380,7 +466,11 @@ class _ChapterCard extends StatelessWidget {
                     height: 40,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: scheme.primary.withValues(alpha: 0.11),
+                      gradient: const LinearGradient(
+                        colors: AppTheme.accentGradient,
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -388,7 +478,7 @@ class _ChapterCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
-                        color: scheme.primary,
+                        color: Colors.white,
                       ),
                     ),
                   ),
