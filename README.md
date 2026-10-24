@@ -7,6 +7,15 @@
 
 ---
 
+## 📥 ডাউনলোড
+
+- 📱 **APK (Android):** [Google Drive ফোল্ডার](https://drive.google.com/drive/folders/1OjWUaNrAtvvx065L26KAZP_zpoXbOke6?usp=drive_link) — রিলিজ APK এখানে আপলোড থাকে, ডাউনলোড করে সরাসরি ইন্সটল করুন
+
+> ইন্সটলের আগে "Unknown sources / অজানা উৎস" অনুমতি দিতে হতে পারে।
+> অ্যাপের ভেতরে AI ফিচার চালাতে নিজের Gemini API key দরকার (নিচে সেটআপ দেখুন)।
+
+---
+
 ## ✨ ফিচারসমূহ
 
 | ফিচার | বিবরণ |
