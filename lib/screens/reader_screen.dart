@@ -381,7 +381,7 @@ class _StepHeader extends StatelessWidget {
                 gradient: const LinearGradient(
                   colors: <Color>[AppTheme.seed, AppTheme.leaf],
                 ),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
                 'ধাপ $stepNumber',
@@ -402,7 +402,7 @@ class _StepHeader extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: scheme.secondaryContainer.withValues(alpha: 0.7),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: scheme.secondary.withValues(alpha: 0.35),
                     ),

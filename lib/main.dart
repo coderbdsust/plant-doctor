@@ -10,6 +10,7 @@ import 'services/settings_service.dart';
 import 'services/web_search_service.dart';
 import 'state/app_controller.dart';
 import 'theme/app_theme.dart';
+import 'widgets/modern_motion.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -96,7 +97,7 @@ class _HomeShellState extends State<HomeShell> {
     final chapters = widget.controller.chapters;
     if (chapterIndex < 0 || chapterIndex >= chapters.length) return;
     Navigator.of(context).push(
-      MaterialPageRoute<void>(
+      FadeSlideRoute<void>(
         builder: (_) => ReaderScreen(
           controller: widget.controller,
           chapter: chapters[chapterIndex],
@@ -108,7 +109,7 @@ class _HomeShellState extends State<HomeShell> {
 
   void _openSettings() {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(
+      FadeSlideRoute<void>(
         builder: (_) => SettingsScreen(controller: widget.controller),
       ),
     );

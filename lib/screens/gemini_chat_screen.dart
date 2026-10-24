@@ -284,7 +284,7 @@ class _ApiKeyBanner extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: scheme.errorContainer.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -351,7 +351,7 @@ class _EmptyChat extends StatelessWidget {
               gradient: const LinearGradient(
                 colors: <Color>[AppTheme.seed, AppTheme.moss],
               ),
-              borderRadius: BorderRadius.circular(22),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(Icons.auto_awesome, color: Colors.white, size: 36),
           ),
@@ -387,15 +387,15 @@ class _EmptyChat extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 8),
             child: Material(
               color: theme.cardTheme.color,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(8),
               child: InkWell(
                 onTap: hasKey ? () => onSuggestion(label) : null,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(8),
                 child: Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: theme.dividerColor),
                   ),
                   child: Row(
@@ -537,7 +537,7 @@ class _TypingBubble extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           color: Theme.of(context).cardTheme.color,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(color: Theme.of(context).dividerColor),
         ),
         child: Row(

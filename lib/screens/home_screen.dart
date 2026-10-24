@@ -4,6 +4,7 @@ import '../models/guide.dart';
 import '../services/gemini_service.dart';
 import '../state/app_controller.dart';
 import '../theme/app_theme.dart';
+import '../widgets/modern_motion.dart';
 import 'plant_doctor_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -33,10 +34,7 @@ class HomeScreen extends StatelessWidget {
       return const Center(child: CircularProgressIndicator());
     }
     if (controller.error != null) {
-      return _ErrorView(
-        message: controller.error!,
-        onRetry: controller.load,
-      );
+      return _ErrorView(message: controller.error!, onRetry: controller.load);
     }
 
     final List<GuideChapter> chapters = controller.chapters;
@@ -48,52 +46,63 @@ class HomeScreen extends StatelessWidget {
           child: CustomScrollView(
             slivers: <Widget>[
               SliverToBoxAdapter(
-                child: _Header(
-                  stepCount: controller.document?.stepCount ?? 0,
-                  chapterCount: chapters.length,
-                  onOpenSettings: onOpenSettings,
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-                  child: _QuickActions(
-                    controller: controller,
-                    onSearch: onOpenSearch,
-                    onAi: onOpenAi,
-                    onContinue: onContinueReading,
+                child: StaggeredEntrance(
+                  order: 0,
+                  child: _Header(
+                    stepCount: controller.document?.stepCount ?? 0,
+                    chapterCount: chapters.length,
+                    onOpenSettings: onOpenSettings,
                   ),
                 ),
               ),
               SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 22, 16, 10),
-                  child: Row(
-                    children: <Widget>[
-                      Text(
-                        'অধ্যায়সমূহ',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 9, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: scheme.primary.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          '${chapters.length}',
-                          style: TextStyle(
-                            fontSize: 12,
+                child: StaggeredEntrance(
+                  order: 1,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                    child: _QuickActions(
+                      controller: controller,
+                      onSearch: onOpenSearch,
+                      onAi: onOpenAi,
+                      onContinue: onContinueReading,
+                    ),
+                  ),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: StaggeredEntrance(
+                  order: 2,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 22, 16, 10),
+                    child: Row(
+                      children: <Widget>[
+                        Text(
+                          'অধ্যায়সমূহ',
+                          style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w700,
-                            color: scheme.primary,
                           ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 9,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: scheme.primary.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            '${chapters.length}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: scheme.primary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -104,9 +113,12 @@ class HomeScreen extends StatelessWidget {
                   separatorBuilder: (_, _) => const SizedBox(height: 12),
                   itemBuilder: (BuildContext context, int index) {
                     final GuideChapter chapter = chapters[index];
-                    return _ChapterCard(
-                      chapter: chapter,
-                      onTap: () => onOpenChapter(chapter),
+                    return StaggeredEntrance(
+                      order: 3 + index,
+                      child: _ChapterCard(
+                        chapter: chapter,
+                        onTap: () => onOpenChapter(chapter),
+                      ),
                     );
                   },
                 ),
@@ -144,7 +156,7 @@ class _Header extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(8),
           boxShadow: <BoxShadow>[
             BoxShadow(
               color: AppTheme.deep.withValues(alpha: 0.35),
@@ -164,7 +176,7 @@ class _Header extends StatelessWidget {
                   height: 46,
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.18),
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: Colors.white.withValues(alpha: 0.28),
                     ),
@@ -244,9 +256,9 @@ class _HeroStat extends StatelessWidget {
           Text(
             label,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                ),
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ],
       ),
@@ -275,9 +287,7 @@ class _RoundIconButton extends StatelessWidget {
         style: IconButton.styleFrom(
           backgroundColor: Colors.white.withValues(alpha: 0.14),
           foregroundColor: Colors.white,
-          shape: const CircleBorder(
-            side: BorderSide(color: Colors.white24),
-          ),
+          shape: const CircleBorder(side: BorderSide(color: Colors.white24)),
         ),
         icon: Icon(icon, size: 20),
       ),
@@ -335,7 +345,7 @@ class _QuickActionsState extends State<_QuickActions> {
           color: AppTheme.seed,
           onTap: () {
             Navigator.of(context).push(
-              MaterialPageRoute<void>(
+              FadeSlideRoute<void>(
                 builder: (BuildContext context) => PlantDoctorScreen(
                   controller: widget.controller,
                   geminiService: GeminiService(),
@@ -375,56 +385,59 @@ class _ActionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
 
-    return Material(
-      color: theme.cardTheme.color,
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: theme.dividerColor),
-          ),
-          child: Row(
-            children: <Widget>[
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: AppTheme.accentGradient,
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: <BoxShadow>[
-                    BoxShadow(
-                      color: AppTheme.seed.withValues(alpha: 0.3),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
+    return PressableScale(
+      onTap: onTap,
+      child: Material(
+        color: theme.cardTheme.color,
+        borderRadius: BorderRadius.circular(8),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: theme.dividerColor),
+            ),
+            child: Row(
+              children: <Widget>[
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: AppTheme.accentGradient,
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                  ],
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: <BoxShadow>[
+                      BoxShadow(
+                        color: AppTheme.seed.withValues(alpha: 0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Icon(icon, color: Colors.white, size: 20),
                 ),
-                child: Icon(icon, color: Colors.white, size: 20),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  label,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    height: 1.35,
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      height: 1.35,
+                    ),
                   ),
                 ),
-              ),
-              Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 15,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ],
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 15,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -443,104 +456,115 @@ class _ChapterCard extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme scheme = theme.colorScheme;
 
-    return Material(
-      color: theme.cardTheme.color,
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: theme.dividerColor),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Container(
-                    width: 40,
-                    height: 40,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: AppTheme.accentGradient,
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      chapter.number.isEmpty ? '${chapter.index + 1}' : chapter.number,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          chapter.title,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            height: 1.4,
-                          ),
+    return PressableScale(
+      onTap: onTap,
+      child: Material(
+        color: theme.cardTheme.color,
+        borderRadius: BorderRadius.circular(8),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: theme.dividerColor),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Container(
+                      width: 40,
+                      height: 40,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: AppTheme.accentGradient,
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: <Widget>[
-                            Icon(Icons.format_list_numbered,
-                                size: 13, color: scheme.onSurfaceVariant),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${chapter.steps.length}টি ধাপ',
-                              style: theme.textTheme.bodySmall?.copyWith(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        chapter.number.isEmpty
+                            ? '${chapter.index + 1}'
+                            : chapter.number,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(
+                            chapter.title,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              height: 1.4,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: <Widget>[
+                              Icon(
+                                Icons.format_list_numbered,
+                                size: 13,
                                 color: scheme.onSurfaceVariant,
                               ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  Icon(Icons.chevron_right, color: scheme.onSurfaceVariant),
-                ],
-              ),
-              if (chapter.searchTerms.isNotEmpty) ...<Widget>[
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: <Widget>[
-                    for (final term in chapter.searchTerms.take(4))
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 9, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: scheme.surfaceContainerHighest
-                              .withValues(alpha: 0.7),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          term,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: scheme.onSurfaceVariant,
-                            fontWeight: FontWeight.w600,
+                              const SizedBox(width: 4),
+                              Text(
+                                '${chapter.steps.length}টি ধাপ',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: scheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
+                        ],
                       ),
+                    ),
+                    Icon(Icons.chevron_right, color: scheme.onSurfaceVariant),
                   ],
                 ),
+                if (chapter.searchTerms.isNotEmpty) ...<Widget>[
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: <Widget>[
+                      for (final term in chapter.searchTerms.take(4))
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 9,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: scheme.surfaceContainerHighest.withValues(
+                              alpha: 0.7,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            term,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: scheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),

@@ -171,7 +171,7 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -209,7 +209,7 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: scheme.tertiaryContainer.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
                 children: <Widget>[
@@ -247,7 +247,7 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
           const SizedBox(height: 14),
           if (_previewBytes != null)
             ClipRRect(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(10),
               child: Image.memory(
                 _previewBytes!,
                 height: 240,
@@ -288,7 +288,7 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: scheme.errorContainer.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(8),
               ),
               child: Text(_error!, style: TextStyle(color: scheme.onErrorContainer)),
             ),
@@ -304,7 +304,7 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: theme.cardTheme.color,
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: theme.dividerColor),
               ),
               child: SelectableText(

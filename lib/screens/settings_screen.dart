@@ -177,7 +177,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: scheme.primaryContainer.withValues(alpha: 0.35),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(10),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,

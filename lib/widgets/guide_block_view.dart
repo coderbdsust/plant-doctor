@@ -54,7 +54,7 @@ class GuideBlockView extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
           decoration: BoxDecoration(
             color: scheme.secondaryContainer.withValues(alpha: 0.45),
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(8),
             border: Border(
               left: BorderSide(color: scheme.tertiary, width: 4),
             ),
@@ -233,7 +233,7 @@ class _TableView extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: scheme.outlineVariant),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(8),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
