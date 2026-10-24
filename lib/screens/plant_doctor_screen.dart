@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../services/gemini_service.dart';
+import '../services/plant_history_service.dart';
 import '../state/app_controller.dart';
 import '../theme/app_theme.dart';
 
@@ -45,6 +46,34 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
   }
 
   bool _hasKey() => widget.controller.settings.apiKey.isNotEmpty;
+  final PlantHistoryService _history = const PlantHistoryService();
+  bool? _lastSaveOk;
+
+  Future<void> _openHistory() async {
+    final List<PlantHistoryEntry> entries = await _history.load();
+    if (!mounted) return;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => PlantHistoryScreen(
+          controller: widget.controller,
+          initialEntries: entries,
+        ),
+      ),
+    );
+  }
+
+  /// Auto-saves every successful diagnosis so the user never loses a result.
+  Future<void> _saveToHistory(GeminiReply reply) async {
+    final Uint8List? bytes = _previewBytes;
+    if (bytes == null) return;
+    final PlantHistoryEntry? saved = await _history.save(
+      photoBytes: bytes,
+      resultText: reply.text,
+      model: widget.controller.settings.model,
+    );
+    if (!mounted) return;
+    setState(() => _lastSaveOk = saved != null);
+  }
 
   Future<void> _pick(ImageSource source) async {
     try {
@@ -114,6 +143,7 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
       );
       if (!mounted) return;
       setState(() => _reply = reply);
+      await _saveToHistory(reply);
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = _analyzeErrorMessage(e));
@@ -147,6 +177,11 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
         title: const Text('গাছের ডাক্তার'),
         actions: <Widget>[
           IconButton(
+            tooltip: 'সাভ করা ফলাফল',
+            onPressed: _openHistory,
+            icon: const Icon(Icons.history_rounded),
+          ),
+          IconButton(
             tooltip: 'রিসেট',
             onPressed: () => setState(() {
               _image = null;
@@ -154,6 +189,7 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
               _base64 = null;
               _reply = null;
               _error = null;
+              _lastSaveOk = null;
               _note.clear();
             }),
             icon: const Icon(Icons.refresh_rounded),
@@ -316,7 +352,302 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
                 ),
               ),
             ),
+            if (_lastSaveOk != null) ...<Widget>[
+              const SizedBox(height: 8),
+              Row(
+                children: <Widget>[
+                  Icon(
+                    _lastSaveOk! ? Icons.bookmark_added_rounded : Icons.error_outline,
+                    size: 16,
+                    color: _lastSaveOk!
+                        ? scheme.primary
+                        : scheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    _lastSaveOk!
+                        ? 'ফলাফল বুকমার্কে সাভ হয়েছে'
+                        : 'ফলাফল সাভ করা গেল না',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: _lastSaveOk! ? scheme.primary : theme.hintColor,
+                    ),
+                  ),
+                  const Spacer(),
+                  TextButton.icon(
+                    onPressed: _openHistory,
+                    icon: const Icon(Icons.history_rounded, size: 16),
+                    label: const Text('সাভ করা ফলাফল দেখুন'),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Shows every saved diagnosis (thumbnail + snippet + full result).
+class PlantHistoryScreen extends StatefulWidget {
+  const PlantHistoryScreen({
+    super.key,
+    required this.controller,
+    required this.initialEntries,
+  });
+
+  final AppController controller;
+  final List<PlantHistoryEntry> initialEntries;
+
+  @override
+  State<PlantHistoryScreen> createState() => _PlantHistoryScreenState();
+}
+
+class _PlantHistoryScreenState extends State<PlantHistoryScreen> {
+  final PlantHistoryService _history = const PlantHistoryService();
+  late List<PlantHistoryEntry> _entries = widget.initialEntries;
+
+  Future<void> _reload() async {
+    final List<PlantHistoryEntry> entries = await _history.load();
+    if (!mounted) return;
+    setState(() => _entries = entries);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('সাভ করা ফলাফল'),
+        actions: <Widget>[
+          if (_entries.isNotEmpty)
+            IconButton(
+              tooltip: 'সব মুছুন',
+              onPressed: () async {
+                final bool? ok = await showDialog<bool>(
+                  context: context,
+                  builder: (BuildContext dialogContext) => AlertDialog(
+                    title: const Text('সব ফলাফল মুছে ফেলবেন?'),
+                    content: const Text('এটি ফেরানো যাবে না।'),
+                    actions: <Widget>[
+                      TextButton(
+                        onPressed: () => Navigator.pop(dialogContext, false),
+                        child: const Text('বাতিল'),
+                      ),
+                      FilledButton(
+                        onPressed: () => Navigator.pop(dialogContext, true),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: scheme.error,
+                          foregroundColor: scheme.onError,
+                        ),
+                        child: const Text('মুছুন'),
+                      ),
+                    ],
+                  ),
+                );
+                if (ok == true) {
+                  await _history.clear();
+                  await _reload();
+                }
+              },
+              icon: const Icon(Icons.delete_sweep_outlined),
+            ),
+        ],
+      ),
+      body: _entries.isEmpty
+          ? const Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Icon(Icons.history_toggle_off_rounded, size: 48),
+                  SizedBox(height: 12),
+                  Text('এখনো কোনো ফলাফল সাভ হয়নি'),
+                  SizedBox(height: 4),
+                  Text('গাছের ডাক্তারে বিশ্লেষণ করলে ফলাফল এখানে জমা হবে'),
+                ],
+              ),
+            )
+          : ListView.separated(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
+              itemCount: _entries.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 12),
+              itemBuilder: (BuildContext context, int index) {
+                final PlantHistoryEntry entry = _entries[index];
+                return _HistoryCard(
+                  entry: entry,
+                  onDelete: () async {
+                    await _history.remove(entry.id);
+                    await _reload();
+                  },
+                );
+              },
+            ),
+    );
+  }
+}
+
+class _HistoryCard extends StatelessWidget {
+  const _HistoryCard({required this.entry, required this.onDelete});
+
+  final PlantHistoryEntry entry;
+  final Future<void> Function() onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
+    final String snippet = entry.resultText.length > 140
+        ? '${entry.resultText.substring(0, 140)}…'
+        : entry.resultText;
+
+    return Material(
+      color: theme.cardTheme.color,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: BorderSide(color: theme.dividerColor),
+      ),
+      child: InkWell(
+        onTap: () => _showFullResult(context, entry.resultText),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: Container(
+                  width: 64,
+                  height: 64,
+                  color: scheme.surfaceContainerHighest,
+                  child: entry.thumbnailBase64.isEmpty
+                      ? const Icon(Icons.image_outlined)
+                      : Image.memory(
+                          base64Decode(entry.thumbnailBase64),
+                          fit: BoxFit.cover,
+                          gaplessPlayback: true,
+                          errorBuilder: (_, _, _) =>
+                              const Icon(Icons.image_outlined),
+                        ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Row(
+                      children: <Widget>[
+                        Icon(Icons.schedule, size: 13, color: scheme.primary),
+                        const SizedBox(width: 4),
+                        Text(
+                          bengaliTimestamp(entry.createdAt),
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: scheme.primary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      snippet,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        height: 1.55,
+                        color: scheme.onSurface,
+                      ),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert, size: 18),
+                    onSelected: (String value) {
+                      if (value == 'delete') onDelete();
+                      if (value == 'full') _showFullResult(context, entry.resultText);
+                    },
+                    itemBuilder: (BuildContext menuContext) => <PopupMenuEntry<String>>[
+                      const PopupMenuItem<String>(
+                        value: 'full',
+                        child: Row(
+                          children: <Widget>[
+                            Icon(Icons.visibility_outlined, size: 17),
+                            SizedBox(width: 8),
+                            Text('পুরো ফলাফল দেখুন'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem<String>(
+                        value: 'delete',
+                        child: Row(
+                          children: <Widget>[
+                            Icon(Icons.delete_outline, size: 17),
+                            SizedBox(width: 8),
+                            Text('মুছুন'),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showFullResult(BuildContext context, String text) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => _FullResultScreen(text: text),
+      ),
+    );
+  }
+}
+
+class _FullResultScreen extends StatelessWidget {
+  const _FullResultScreen({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('সাভ করা ফলাফল')),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+        children: <Widget>[
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.cardTheme.color,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: theme.dividerColor),
+            ),
+            child: SelectableText(
+              text,
+              style: TextStyle(
+                fontSize: 15,
+                height: 1.8,
+                color: scheme.onSurface,
+              ),
+            ),
+          ),
         ],
       ),
     );
