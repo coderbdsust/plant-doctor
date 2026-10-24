@@ -34,7 +34,8 @@ class GeminiService {
 
   final http.Client _client;
 
-  static const String _base = 'https://generativelanguage.googleapis.com/v1beta';
+  static const String _base =
+      'https://generativelanguage.googleapis.com/v1beta';
 
   static const List<String> availableModels = <String>[
     'gemini-3.8-flash',
@@ -74,7 +75,8 @@ class GeminiService {
   }) async {
     if (apiKey.trim().isEmpty) {
       throw GeminiException(
-          'Gemini API key যোগ করা হয়নি। সেটিংস থেকে key দিন।');
+        'Gemini API key যোগ করা হয়নি। সেটিংস থেকে key দিন।',
+      );
     }
 
     final String prompt = additionalPrompt?.trim().isNotEmpty == true
@@ -101,9 +103,7 @@ class GeminiService {
           ],
         },
       ],
-      'generationConfig': <String, dynamic>{
-        'maxOutputTokens': 4096,
-      },
+      'generationConfig': <String, dynamic>{'maxOutputTokens': 4096},
     };
 
     final http.Response response = await _postGenerate(
@@ -126,7 +126,8 @@ class GeminiService {
   }) async {
     if (apiKey.trim().isEmpty) {
       throw GeminiException(
-          'Gemini API key যোগ করা হয়নি। সেটিংস থেকে key দিন।');
+        'Gemini API key যোগ করা হয়নি। সেটিংস থেকে key দিন।',
+      );
     }
 
     final Map<String, dynamic> body = <String, dynamic>{
@@ -144,9 +145,7 @@ class GeminiService {
           ],
         },
       ],
-      'generationConfig': <String, dynamic>{
-        'maxOutputTokens': 4096,
-      },
+      'generationConfig': <String, dynamic>{'maxOutputTokens': 4096},
     };
 
     if (useGoogleSearch) {
@@ -155,12 +154,41 @@ class GeminiService {
       ];
     }
 
-    final http.Response response = await _postGenerate(
-      model: model,
-      body: body,
-      apiKey: apiKey,
-      timeout: const Duration(seconds: 90),
-    );
+    final http.Response response;
+    try {
+      response = await _postGenerate(
+        model: model,
+        body: body,
+        apiKey: apiKey,
+        timeout: const Duration(seconds: 90),
+      );
+    } on GeminiException catch (e) {
+      // Some models / API-key tiers reject the googleSearch tool — the image
+      // flow (no tools) keeps working while chat fails. Retry once without
+      // grounding so the chat still gets an answer.
+      final int code = e.statusCode ?? 0;
+      final bool toolRelated =
+          e.message.contains('tool') || e.message.contains('search');
+      final bool retriable =
+          code == 400 || code == 405 || code == 501 || toolRelated;
+      if (useGoogleSearch && code != 401 && code != 429 && retriable) {
+        final Map<String, dynamic> fallbackBody = Map<String, dynamic>.of(body)
+          ..remove('tools');
+        try {
+          final http.Response fallback = await _postGenerate(
+            model: model,
+            body: fallbackBody,
+            apiKey: apiKey,
+            timeout: const Duration(seconds: 90),
+          );
+          return _parseReply(jsonDecode(fallback.body) as Map<String, dynamic>);
+        } on GeminiException {
+          // The retry failed too — surface the original error.
+          rethrow;
+        }
+      }
+      rethrow;
+    }
 
     return _parseReply(jsonDecode(response.body) as Map<String, dynamic>);
   }
@@ -183,7 +211,7 @@ class GeminiService {
     final String encodedBody = jsonEncode(body);
     const int maxAttempts = 2;
 
-    for (int attempt = 1;; attempt++) {
+    for (int attempt = 1; ; attempt++) {
       final http.Response response;
       try {
         response = await _client
@@ -217,7 +245,8 @@ class GeminiService {
     try {
       final dynamic json = jsonDecode(body);
       if (json is Map && json['error'] is Map) {
-        final Map<dynamic, dynamic> error = json['error'] as Map<dynamic, dynamic>;
+        final Map<dynamic, dynamic> error =
+            json['error'] as Map<dynamic, dynamic>;
         final dynamic details = error['details'];
         if (details is List) {
           for (final detail in details) {
@@ -244,17 +273,21 @@ class GeminiService {
       return null;
     }
     if (raw == null) return null;
-    final RegExpMatch? match =
-        RegExp(r'^PT?(?:(\d+(?:\.\d+)?)S)?$').firstMatch(raw.trim());
+    final RegExpMatch? match = RegExp(
+      r'^PT?(?:(\d+(?:\.\d+)?)S)?$',
+    ).firstMatch(raw.trim());
     if (match != null && match.group(1) != null) {
-      return Duration(milliseconds: (double.parse(match.group(1)!) * 1000).round());
+      return Duration(
+        milliseconds: (double.parse(match.group(1)!) * 1000).round(),
+      );
     }
     return null;
   }
 
   /// Turns a raw Gemini error response into a friendly Bengali message.
   static String friendlyError(String body, [int? statusCode]) {
-    String message = 'Gemini অনুরোধ ব্যর্থ হয়েছে। অনুগ্রহ করে API key যাচাই করুন।';
+    String message =
+        'Gemini অনুরোধ ব্যর্থ হয়েছে। অনুগ্রহ করে API key যাচাই করুন।';
     try {
       final dynamic json = jsonDecode(body);
       if (json is Map && json['error']['message'] is String) {
@@ -266,8 +299,9 @@ class GeminiService {
 
     if (statusCode == 429) {
       final Duration? delay = retryDelayFromError(body);
-      final String waitHint =
-          delay == null ? '' : ' প্রায় ${delay.inSeconds} সেকেন্ড পর আবার চেষ্টা করুন।';
+      final String waitHint = delay == null
+          ? ''
+          : ' প্রায় ${delay.inSeconds} সেকেন্ড পর আবার চেষ্টা করুন।';
       return 'রেট লিমিট/কোটা শেষ হয়ে গেছে (৪২৯)।$waitHint\n\n'
           'টিপস: একই Google Cloud প্রজেক্টের সব API key মিলে কোটা ব্যবহার করে — '
           'নতুন key বানালেও একই প্রজেক্টে কোটা রিসেট হয় না। নতুন প্রজেক্টে '
@@ -308,10 +342,12 @@ class GeminiService {
         for (final chunk in chunks) {
           final web = chunk?['web'];
           if (web is Map && web['uri'] is String) {
-            citations.add(GeminiCitation(
-              title: (web['title'] as String?) ?? web['uri'] as String,
-              uri: web['uri'] as String,
-            ));
+            citations.add(
+              GeminiCitation(
+                title: (web['title'] as String?) ?? web['uri'] as String,
+                uri: web['uri'] as String,
+              ),
+            );
           }
         }
       }
