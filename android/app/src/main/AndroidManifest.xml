@@ -8,7 +8,7 @@
     <uses-permission android:minSdkVersion="33" android:name="android.permission.READ_MEDIA_IMAGES"/>
     <uses-permission android:maxSdkVersion="32" android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <application
-        android:label="Plant Doctor"
+        android:label="গাছের ডাক্তার"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

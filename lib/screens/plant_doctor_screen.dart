@@ -82,7 +82,7 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
     final String raw = e.toString().toLowerCase();
     if (raw.contains('camera') || raw.contains('permission')) {
       return 'ক্যামেরা/গ্যালারির অনুমতি দেওয়া হয়নি। ফোনের Settings → Apps → '
-          'Plant Doctor → Permissions থেকে Camera ও Photos অনুমতি চালু করুন।';
+          'গাছের ডাক্তার → Permissions থেকে Camera ও Photos অনুমতি চালু করুন।';
     }
     if (raw.contains('activity') || raw.contains('unavailable')) {
       return 'ফোনে উপযুক্ত ক্যামেরা/গ্যালারি অ্যাপ পাওয়া যায়নি। '
