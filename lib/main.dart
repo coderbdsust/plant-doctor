@@ -115,6 +115,17 @@ class _HomeShellState extends State<HomeShell> {
     );
   }
 
+  void _openAi() {
+    Navigator.of(context).push(
+      FadeSlideRoute<void>(
+        builder: (_) => GeminiChatScreen(
+          controller: widget.controller,
+          geminiService: widget.geminiService,
+        ),
+      ),
+    );
+  }
+
   /// Resumes reading where the user left off.
   void _continueReading() {
     final chapters = widget.controller.chapters;
@@ -147,7 +158,7 @@ class _HomeShellState extends State<HomeShell> {
         onOpenChapter: (chapter) => _openReader(chapter.index),
         onContinueReading: _continueReading,
         onOpenSearch: () => setState(() => _tab = 1),
-        onOpenAi: () => setState(() => _tab = 2),
+        onOpenAi: _openAi,
         onOpenSettings: _openSettings,
       ),
       SearchScreen(
@@ -155,11 +166,7 @@ class _HomeShellState extends State<HomeShell> {
         webSearchService: widget.webSearchService,
         onOpenStep: (chapter, step) =>
             _openReader(chapter.index, step: step.stepIndex),
-        onOpenAi: () => setState(() => _tab = 2),
-      ),
-      GeminiChatScreen(
-        controller: widget.controller,
-        geminiService: widget.geminiService,
+        onOpenAi: _openAi,
       ),
     ];
 
@@ -178,11 +185,6 @@ class _HomeShellState extends State<HomeShell> {
             icon: Icon(Icons.search_outlined),
             selectedIcon: Icon(Icons.search_rounded),
             label: 'সার্চ',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.auto_awesome_outlined),
-            selectedIcon: Icon(Icons.auto_awesome),
-            label: 'জেমিনি',
           ),
         ],
       ),
