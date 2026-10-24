@@ -92,7 +92,7 @@ class AppTheme {
         surfaceTintColor: Colors.transparent,
         color: isLight ? const Color(0xFFFCFFFB) : const Color(0xFF161E16),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(14),
           side: BorderSide(
             color: isLight
                 ? const Color(0xFFDCE9D6)
@@ -104,7 +104,7 @@ class AppTheme {
         backgroundColor: isLight ? Colors.white : const Color(0xFF161E16),
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(16),
         ),
         titleTextStyle: TextStyle(
           fontFamily: fontFamily,
@@ -182,7 +182,7 @@ class AppTheme {
           foregroundColor: scheme.onPrimary,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
           ),
           textStyle: const TextStyle(
             fontFamily: fontFamily,
@@ -197,7 +197,7 @@ class AppTheme {
           side: BorderSide(color: scheme.primary.withValues(alpha: 0.45)),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
           ),
           textStyle: const TextStyle(
             fontFamily: fontFamily,

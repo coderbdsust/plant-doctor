@@ -144,7 +144,7 @@ class _Header extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(14),
           boxShadow: <BoxShadow>[
             BoxShadow(
               color: AppTheme.deep.withValues(alpha: 0.35),
@@ -377,14 +377,14 @@ class _ActionCard extends StatelessWidget {
 
     return Material(
       color: theme.cardTheme.color,
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(14),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(color: theme.dividerColor),
           ),
           child: Row(
@@ -445,14 +445,14 @@ class _ChapterCard extends StatelessWidget {
 
     return Material(
       color: theme.cardTheme.color,
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(14),
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(color: theme.dividerColor),
           ),
           child: Column(
