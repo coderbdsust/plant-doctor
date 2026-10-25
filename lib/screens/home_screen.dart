@@ -7,7 +7,22 @@ import '../theme/app_theme.dart';
 import '../widgets/modern_motion.dart';
 import 'plant_doctor_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+const List<String> _roofTips = <String>[
+  'টবের কিনারা ঘেঁষে গোল নালা কেটে অনুখাদ্য দিয়ে মাটি ঢেকে দিন — পোড়া রোধ হবে।',
+  'হাফ ড্রাম সাইজের টবে ৪ মুঠ সার, ছোট টবে ২ মুঠ — ২৫ দিন পর প্রয়োগ করুন।',
+  'সকাল ৯টার আগে বা বিকাল ৪টার পর বাগানে পানি দিন — দুপুরের রোদে পাতা বন্যানয় নয়।',
+  'পাতা ঝরে পড়লে খাবার পানির ঘাটতি ভাবার আগে মাটির নিচে আলগা করে দেখুন — শিকড়ে পানি জমে থাকলে ঝরে।',
+  'লেবুর ক্লোরোসিস হলে জিংক + আয়রন মুক্ত গোড়া স্প্রে করুন।',
+  'মিলিবাগ আক্রমণে ইমিটাফ/নিমতেল ১৫ দিনে একবার স্প্রে করুন ও আনাড়ি কচি পাতা বাঁধুন।',
+  'ছত্রাক দমনে ম্যানকোজেব/ট্রাইকোডার্মা — সাবিডা প্রথমে, কারণ মাটির নজরদারি বার্তা ও খেনা বর্জন করে।',
+  'গাছের বৃদ্ধি থেমে গেলে দেখুন টবটি বেন্ডিং বাইন্ডিং উপযুক্ত কিনা — ছোট টবে গাছ থেমে যায়।',
+  'সিড ট্রেতে কোকুপিট মিশ্রণে বীজ রোপণ করুন — জার্মিনেশন সফুট্টবে দ্রুত।',
+  'টবের নিচে ব্লক পাথর দিন যাতে পানি-রুদন না লাগে — শিকড়ে আর্দ্র বাতাস চলবে।',
+  'গ্যারেজ পাশের বাগানে আলের ছায়া থাকে — পুষ্টি ঘাটতিতে সাপ্তাহিক বেন্ডিং সার দিন।',
+  'ফড়িং শিকার ধরার আগে ব্লু/হলুদ স্টিকি প্যাড টবের পাশে লাগান — আদি শুনে দেওয়া কাজ।',
+];
+
+class HomeScreen extends StatefulWidget {
   const HomeScreen({
     super.key,
     required this.controller,
@@ -26,98 +41,121 @@ class HomeScreen extends StatelessWidget {
   final VoidCallback onOpenSettings;
 
   @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  /// null = সকল অধ্যায় দেখাও, অন্য মান = এই অধ্যায়টি হাইলাইট করো।
+  int? _selectedChapter;
+
+  List<GuideChapter> get _chaptersFiltered {
+    final List<GuideChapter> chapters = widget.controller.chapters;
+    if (_selectedChapter == null) return chapters;
+    if (_selectedChapter! < chapters.length) {
+      return <GuideChapter>[chapters[_selectedChapter!]];
+    }
+    return chapters;
+  }
+
+  void _openPlantDoctor() {
+    Navigator.of(context).push(
+      FadeSlideRoute<void>(
+        builder: (BuildContext context) => PlantDoctorScreen(
+          controller: widget.controller,
+          geminiService: GeminiService(),
+        ),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme scheme = theme.colorScheme;
-
-    if (controller.loading) {
-      return const Center(child: CircularProgressIndicator());
+    if (widget.controller.loading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-    if (controller.error != null) {
-      return _ErrorView(message: controller.error!, onRetry: controller.load);
+    if (widget.controller.error != null) {
+      return _ErrorView(
+        message: widget.controller.error!,
+        onRetry: widget.controller.load,
+      );
     }
 
-    final List<GuideChapter> chapters = controller.chapters;
+    final List<GuideChapter> all = widget.controller.chapters;
+    final int stepCount = widget.controller.document?.stepCount ?? 0;
+    final List<GuideChapter> chapters = _chaptersFiltered;
 
     return Scaffold(
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: controller.load,
+          onRefresh: widget.controller.load,
           child: CustomScrollView(
             slivers: <Widget>[
               SliverToBoxAdapter(
                 child: StaggeredEntrance(
                   order: 0,
-                  child: _Header(
-                    stepCount: controller.document?.stepCount ?? 0,
-                    chapterCount: chapters.length,
-                    onOpenSettings: onOpenSettings,
+                  child: _TopBar(
+                    onOpenSettings: widget.onOpenSettings,
+                    onOpenAi: widget.onOpenAi,
                   ),
                 ),
               ),
               SliverToBoxAdapter(
-                child: StaggeredEntrance(
-                  order: 1,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-                    child: _QuickActions(
-                      controller: controller,
-                      onSearch: onOpenSearch,
-                      onAi: onOpenAi,
-                      onContinue: onContinueReading,
-                    ),
-                  ),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: StaggeredEntrance(
-                  order: 2,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 22, 16, 10),
-                    child: Row(
-                      children: <Widget>[
-                        Text(
-                          'অধ্যায়সমূহ',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+                  child: Column(
+                    children: <Widget>[
+                      StaggeredEntrance(
+                        order: 1,
+                        child: _SearchPill(onTap: widget.onOpenSearch),
+                      ),
+                      const SizedBox(height: 12),
+                      StaggeredEntrance(
+                        order: 2,
+                        child: _ChapterChips(
+                          chapters: all,
+                          selected: _selectedChapter,
+                          onSelected: (int? i) =>
+                              setState(() => _selectedChapter = i),
                         ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 9,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: scheme.primary.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            '${chapters.length}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: scheme.primary,
-                            ),
-                          ),
+                      ),
+                      const SizedBox(height: 12),
+                      StaggeredEntrance(
+                        order: 3,
+                        child: PressableScale(
+                          onTap: _openPlantDoctor,
+                          child: const _ScanHero(),
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 12),
+                      StaggeredEntrance(order: 4, child: _TipOfDay()),
+                      const SizedBox(height: 20),
+                      StaggeredEntrance(
+                        order: 5,
+                        child: _SectionHeader(
+                          title: 'প্রয়োজনীয় ক্যাটাগরি',
+                          chips: <String>[
+                            '${all.length}টি অধ্যায়',
+                            '$stepCountটি ধাপ',
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
                 sliver: SliverList.separated(
                   itemCount: chapters.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 12),
+                  separatorBuilder: (_, _) => const SizedBox(height: 10),
                   itemBuilder: (BuildContext context, int index) {
                     final GuideChapter chapter = chapters[index];
                     return StaggeredEntrance(
-                      order: 3 + index,
+                      order: 6 + index,
+                      enabled: index < 8,
                       child: _ChapterCard(
                         chapter: chapter,
-                        onTap: () => onOpenChapter(chapter),
+                        onTap: () => widget.onOpenChapter(chapter),
                       ),
                     );
                   },
@@ -131,100 +169,171 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-class _Header extends StatelessWidget {
-  const _Header({
-    required this.stepCount,
-    required this.chapterCount,
-    required this.onOpenSettings,
-  });
+/// ── টপ বার: লোগো টাইল + টাইটেল + badge + actioncircle ──────────────────
+class _TopBar extends StatelessWidget {
+  const _TopBar({required this.onOpenSettings, required this.onOpenAi});
 
-  final int stepCount;
-  final int chapterCount;
   final VoidCallback onOpenSettings;
+  final VoidCallback onOpenAi;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(18, 18, 12, 18),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: AppTheme.heroGradient,
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: scheme.surface.withValues(alpha: 0.85),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: <Widget>[
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: AppTheme.accentGradient,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: <BoxShadow>[
+                BoxShadow(
+                  color: AppTheme.glow.withValues(alpha: 0.35),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.local_florist_rounded,
+              color: Color(0xFF003915),
+              size: 22,
+            ),
           ),
-          borderRadius: BorderRadius.circular(8),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(
+                  'উদ্ভিদ ডাক্তার',
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.3,
+                    color: scheme.primary,
+                  ),
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  'PlantDoc AI • উদ্ভিদ ও বাগান সহকারী',
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _CircleIcon(
+            tooltip: 'জেমিনি AI',
+            icon: Icons.auto_awesome_outlined,
+            onTap: onOpenAi,
+          ),
+          _CircleIcon(
+            tooltip: 'সেটিংস',
+            icon: Icons.settings_outlined,
+            onTap: onOpenSettings,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CircleIcon extends StatelessWidget {
+  const _CircleIcon({
+    required this.tooltip,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    return Tooltip(
+      message: tooltip,
+      child: IconButton(
+        onPressed: onTap,
+        icon: Icon(icon, size: 21),
+        color: scheme.onSurfaceVariant,
+        style: IconButton.styleFrom(
+          shape: const CircleBorder(),
+          padding: const EdgeInsets.all(10),
+        ),
+      ),
+    );
+  }
+}
+
+/// ── রাউন্ড সার্চ পিল ─────────────────────────────────────────────────────
+class _SearchPill extends StatelessWidget {
+  const _SearchPill({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
+
+    return PressableScale(
+      onTap: onTap,
+      child: Container(
+        height: 46,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(999),
           boxShadow: <BoxShadow>[
             BoxShadow(
-              color: AppTheme.deep.withValues(alpha: 0.35),
-              blurRadius: 22,
-              offset: const Offset(0, 10),
+              color: Colors.black.withValues(alpha: 0.18),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: <Widget>[
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Container(
-                  width: 46,
-                  height: 46,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.18),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.28),
-                    ),
-                  ),
-                  child: const Icon(Icons.park, color: Colors.white, size: 26),
+            Icon(Icons.search_rounded, color: scheme.primary, size: 22),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'গাইডে সার্চ করুন বা প্রশ্ন জিজ্ঞুন...',
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: scheme.outline,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        'গাছের ডাক্তার',
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.3,
-                          color: Colors.white,
-                        ),
-                      ),
-                      Text(
-                        'ছাদ বাগান ও উদ্ভিদ পরিচর্যা গাইড',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.white.withValues(alpha: 0.82),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                _RoundIconButton(
-                  icon: Icons.settings_outlined,
-                  tooltip: 'সেটিংস',
-                  onTap: onOpenSettings,
-                ),
-              ],
+              ),
             ),
-            const SizedBox(height: 16),
-            Row(
-              children: <Widget>[
-                _HeroStat(
-                  icon: Icons.menu_book_outlined,
-                  label: '$chapterCountটি অধ্যায়',
-                ),
-                const SizedBox(width: 10),
-                _HeroStat(
-                  icon: Icons.format_list_numbered,
-                  label: '$stepCountটি ধাপ',
-                ),
-              ],
+            Icon(
+              Icons.mic_none_rounded,
+              color: scheme.onSurfaceVariant,
+              size: 19,
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: scheme.onSurfaceVariant,
+              size: 22,
             ),
           ],
         ),
@@ -233,31 +342,256 @@ class _Header extends StatelessWidget {
   }
 }
 
-class _HeroStat extends StatelessWidget {
-  const _HeroStat({required this.icon, required this.label});
+/// ── চ্যাপ্টার ফিল্টার চিপস (স্ক্রলযোগ্য পিল) ────────────────────────
+class _ChapterChips extends StatelessWidget {
+  const _ChapterChips({
+    required this.chapters,
+    required this.selected,
+    required this.onSelected,
+  });
 
-  final IconData icon;
-  final String label;
+  final List<GuideChapter> chapters;
+  final int? selected;
+  final void Function(int?) onSelected;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
+
+    String shortTitle(GuideChapter c) {
+      final List<String> words = c.title.trim().split(RegExp(r'\s+'));
+      if (words.length <= 3) return c.title.trim();
+      return '${words.take(3).join(' ')}…';
+    }
+
+    return SizedBox(
+      height: 34,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: chapters.length + 1,
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        itemBuilder: (BuildContext context, int index) {
+          final bool isAll = index == 0;
+          final GuideChapter? c = isAll ? null : chapters[index - 1];
+          final bool selected = isAll
+              ? this.selected == null
+              : this.selected == index - 1;
+
+          return GestureDetector(
+            onTap: () => onSelected(isAll ? null : (index - 1)),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOut,
+              alignment: Alignment.center,
+              padding: const EdgeInsets.symmetric(horizontal: 13),
+              decoration: BoxDecoration(
+                color: selected
+                    ? scheme.surfaceContainerHigh
+                    : scheme.surfaceContainer,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  if (!isAll) ...<Widget>[
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: selected ? scheme.primary : scheme.outline,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                  ],
+                  Text(
+                    isAll ? 'সকল নির্দেশিকা' : shortTitle(c!),
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: selected
+                          ? scheme.primary
+                          : scheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+    );
+  }
+}
+
+/// ── হিরো স্ক্যান কার্ড (গ্লো ব্লব + ব্যাজ + ফিচার + CTA) ───────────────
+class _ScanHero extends StatelessWidget {
+  const _ScanHero();
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.22),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Stack(
+        clipBehavior: Clip.hardEdge,
         children: <Widget>[
-          Icon(icon, size: 14, color: Colors.white.withValues(alpha: 0.9)),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
+          // গ্লো ব্লব (design: primary/10 top-right, tertiary/10 bottom-left)
+          Positioned(
+            right: -24,
+            top: -24,
+            child: Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: <Color>[
+                    scheme.primary.withValues(alpha: 0.14),
+                    scheme.primary.withValues(alpha: 0.0),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            left: -20,
+            bottom: -20,
+            child: Container(
+              width: 110,
+              height: 110,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: <Color>[
+                    scheme.tertiaryContainer.withValues(alpha: 0.14),
+                    scheme.tertiaryContainer.withValues(alpha: 0.0),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Row(
+                  children: <Widget>[
+                    Container(
+                      width: 26,
+                      height: 26,
+                      decoration: BoxDecoration(
+                        color: scheme.primary.withValues(alpha: 0.20),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.auto_awesome_rounded,
+                        size: 15,
+                        color: scheme.primary,
+                      ),
+                    ),
+                    const SizedBox(width: 7),
+                    Text(
+                      'AI স্ক্যানার',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: scheme.primary,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.9,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: scheme.surfaceContainerHigh,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        'তাত্ক্ষণিক নিদান',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: <Widget>[
+                    Container(
+                      width: 42,
+                      height: 42,
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: scheme.primary.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.center_focus_strong_rounded,
+                        color: scheme.primary,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 11),
+                    Expanded(
+                      child: Text(
+                        'গাছের ছবি তুলুন বা আপলোড করুন',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          height: 1.35,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                const Row(
+                  children: <Widget>[
+                    _HeroFeature(
+                      icon: Icons.check_circle,
+                      label: 'মিলিবাগ ও ছত্রাক সনাক্তকরণ',
+                    ),
+                    SizedBox(width: 16),
+                    _HeroFeature(
+                      icon: Icons.check_circle,
+                      label: 'বিনা মূল্যে তাৎক্ষণিক নিদান',
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  height: 42,
+                  child: FilledButton.icon(
+                    onPressed: null,
+                    style: FilledButton.styleFrom(
+                      disabledBackgroundColor: scheme.primary,
+                      disabledForegroundColor: scheme.onPrimary,
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                    ),
+                    icon: Icon(Icons.center_focus_strong_rounded, size: 18),
+                    label: const Text(
+                      'গাছের ডাক্তার খুলুন',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -266,101 +600,28 @@ class _HeroStat extends StatelessWidget {
   }
 }
 
-class _RoundIconButton extends StatelessWidget {
-  const _RoundIconButton({
-    required this.icon,
-    required this.tooltip,
-    required this.onTap,
-  });
+class _HeroFeature extends StatelessWidget {
+  const _HeroFeature({required this.icon, required this.label});
 
   final IconData icon;
-  final String tooltip;
-  final VoidCallback onTap;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: IconButton(
-        tooltip: tooltip,
-        onPressed: onTap,
-        style: IconButton.styleFrom(
-          backgroundColor: Colors.white.withValues(alpha: 0.14),
-          foregroundColor: Colors.white,
-          shape: const CircleBorder(side: BorderSide(color: Colors.white24)),
-        ),
-        icon: Icon(icon, size: 20),
-      ),
-    );
-  }
-}
-
-class _QuickActions extends StatefulWidget {
-  const _QuickActions({
-    required this.controller,
-    required this.onSearch,
-    required this.onAi,
-    required this.onContinue,
-  });
-
-  final AppController controller;
-  final VoidCallback onSearch;
-  final VoidCallback onAi;
-  final VoidCallback onContinue;
-
-  @override
-  State<_QuickActions> createState() => _QuickActionsState();
-}
-
-class _QuickActionsState extends State<_QuickActions> {
-  @override
-  Widget build(BuildContext context) {
-    return Column(
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        Row(
-          children: <Widget>[
-            Expanded(
-              child: _ActionCard(
-                icon: Icons.search,
-                label: 'গাইডে সার্চ',
-                color: AppTheme.seed,
-                onTap: widget.onSearch,
-              ),
+        Icon(icon, size: 15, color: scheme.primary),
+        const SizedBox(width: 5),
+        Flexible(
+          child: Text(
+            label,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: scheme.onSurfaceVariant,
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _ActionCard(
-                icon: Icons.auto_awesome,
-                label: 'জেমিনি AI',
-                color: AppTheme.moss,
-                onTap: widget.onAi,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        _ActionCard(
-          icon: Icons.local_florist_outlined,
-          label: 'গাছের ডাক্তার - ছবি দেখে শনাক্ত ও রোগ নির্ণয়',
-          color: AppTheme.seed,
-          onTap: () {
-            Navigator.of(context).push(
-              FadeSlideRoute<void>(
-                builder: (BuildContext context) => PlantDoctorScreen(
-                  controller: widget.controller,
-                  geminiService: GeminiService(),
-                ),
-              ),
-            );
-          },
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          child: FilledButton.icon(
-            onPressed: widget.onContinue,
-            icon: const Icon(Icons.play_arrow_rounded),
-            label: const Text('ধাপে ধাপে পড়া শুরু করুন'),
           ),
         ),
       ],
@@ -368,82 +629,151 @@ class _QuickActionsState extends State<_QuickActions> {
   }
 }
 
-class _ActionCard extends StatelessWidget {
-  const _ActionCard({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
+/// ── আজকের টিপস কার্ড (lightbulb + bookmark টগল) ─────────────────────
+class _TipOfDay extends StatefulWidget {
+  const _TipOfDay();
 
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
+  @override
+  State<_TipOfDay> createState() => _TipOfDayState();
+}
+
+class _TipOfDayState extends State<_TipOfDay> {
+  bool _saved = false;
+
+  static int _tipIndex() {
+    final DateTime now = DateTime.now();
+    return now.difference(DateTime(2026)).inDays % _roofTips.length;
+  }
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
+    final String tip = _roofTips[_tipIndex()];
 
-    return PressableScale(
-      onTap: onTap,
-      child: Material(
-        color: theme.cardTheme.color,
-        borderRadius: BorderRadius.circular(8),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(8),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Container(
+            width: 34,
+            height: 34,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: theme.dividerColor),
+              color: scheme.tertiaryContainer.withValues(alpha: 0.30),
+              shape: BoxShape.circle,
             ),
-            child: Row(
+            child: Icon(
+              Icons.lightbulb_rounded,
+              size: 18,
+              color: scheme.tertiary,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: AppTheme.accentGradient,
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: <BoxShadow>[
-                      BoxShadow(
-                        color: AppTheme.seed.withValues(alpha: 0.3),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Icon(icon, color: Colors.white, size: 20),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    label,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      height: 1.35,
-                    ),
+                Text(
+                  'আজকের ছাদকৃষি টিপস',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: scheme.tertiary,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.6,
                   ),
                 ),
-                Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  size: 15,
-                  color: theme.colorScheme.onSurfaceVariant,
+                const SizedBox(height: 4),
+                Text(
+                  tip,
+                  style: theme.textTheme.bodySmall?.copyWith(height: 1.55),
                 ),
               ],
             ),
           ),
-        ),
+          IconButton(
+            tooltip: 'সাভ',
+            onPressed: () => setState(() => _saved = !_saved),
+            icon: Icon(
+              _saved
+                  ? Icons.bookmark_added_rounded
+                  : Icons.bookmark_add_rounded,
+              size: 20,
+              color: _saved ? scheme.primary : scheme.onSurfaceVariant,
+            ),
+          ),
+        ],
       ),
     );
   }
 }
+
+/// ── সেকশন হেডার + স্ট্যাট চিপাস ──────────────────────────────────────
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.title, required this.chips});
+
+  final String title;
+  final List<String> chips;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          title,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: <Widget>[
+            for (int i = 0; i < chips.length; i++)
+              Container(
+                margin: EdgeInsets.only(right: i == chips.length - 1 ? 0 : 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: scheme.surfaceContainerHigh,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  chips[i],
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// ── চ্যাপ্টার কার্ড (ক্যাটাগরি স্টাইল) ───────────────────────────────
+const List<IconData> _chapterIcons = <IconData>[
+  Icons.local_florist_outlined,
+  Icons.compost_outlined,
+  Icons.water_drop_outlined,
+  Icons.grass,
+  Icons.pest_control_outlined,
+  Icons.spa_outlined,
+  Icons.science_outlined,
+  Icons.eco_outlined,
+  Icons.landscape_outlined,
+  Icons.home_repair_service_outlined,
+  Icons.menu_book_outlined,
+];
 
 class _ChapterCard extends StatelessWidget {
   const _ChapterCard({required this.chapter, required this.onTap});
@@ -455,114 +785,61 @@ class _ChapterCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme scheme = theme.colorScheme;
+    final IconData icon =
+        _chapterIcons[chapter.index < _chapterIcons.length
+            ? chapter.index
+            : _chapterIcons.length - 1];
 
     return PressableScale(
       onTap: onTap,
       child: Material(
-        color: theme.cardTheme.color,
-        borderRadius: BorderRadius.circular(8),
+        color: scheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+        shadowColor: Colors.black.withValues(alpha: 0.22),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(8),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: theme.dividerColor),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
               children: <Widget>[
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Container(
-                      width: 40,
-                      height: 40,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: AppTheme.accentGradient,
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        chapter.number.isEmpty
-                            ? '${chapter.index + 1}'
-                            : chapter.number,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Text(
-                            chapter.title,
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w700,
-                              height: 1.4,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: <Widget>[
-                              Icon(
-                                Icons.format_list_numbered,
-                                size: 13,
-                                color: scheme.onSurfaceVariant,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                '${chapter.steps.length}টি ধাপ',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: scheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    Icon(Icons.chevron_right, color: scheme.onSurfaceVariant),
-                  ],
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: scheme.primary.withValues(alpha: 0.14),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, color: scheme.primary, size: 20),
                 ),
-                if (chapter.searchTerms.isNotEmpty) ...<Widget>[
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
+                const SizedBox(width: 11),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      for (final term in chapter.searchTerms.take(4))
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 9,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: scheme.surfaceContainerHighest.withValues(
-                              alpha: 0.7,
-                            ),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            term,
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: scheme.onSurfaceVariant,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                      Text(
+                        chapter.title,
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
                         ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${chapter.steps.length}টি ধাপ',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
                     ],
                   ),
-                ],
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: scheme.onSurfaceVariant,
+                  size: 22,
+                ),
               ],
             ),
           ),
@@ -580,21 +857,23 @@ class _ErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            const Icon(Icons.error_outline, size: 48),
-            const SizedBox(height: 12),
-            Text(message, textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: () => onRetry(),
-              child: const Text('আবার চেষ্টা করুন'),
-            ),
-          ],
+    return Scaffold(
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              const Icon(Icons.error_outline, size: 48),
+              const SizedBox(height: 12),
+              Text(message, textAlign: TextAlign.center),
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: () => onRetry(),
+                child: const Text('আবার চেষ্টা করুন'),
+              ),
+            ],
+          ),
         ),
       ),
     );

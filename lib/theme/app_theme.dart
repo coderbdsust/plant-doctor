@@ -1,19 +1,30 @@
 import 'package:flutter/material.dart';
 
-/// Green-toned Material 3 theme for the app.
+/// Material 3 theme mirroring the Stitch "PlantDoc AI" design tokens.
 class AppTheme {
   AppTheme._();
 
-  static const Color seed = Color(0xFF1B7A3D);
-  static const Color leaf = Color(0xFF43A047);
-  static const Color moss = Color(0xFF7CB342);
-  static const Color deep = Color(0xFF0F3D1E);
+  /// Design primary (dark mode) from the Stitch project.
+  static const Color seed = Color(0xFF4BE277);
+  static const Color leaf = Color(0xFF22C55E);
+  static const Color moss = Color(0xFF6BFF8F);
+  static const Color deep = Color(0xFF07170C);
   static const Color terracotta = Color(0xFFC1663B);
   static const String fontFamily = 'NotoSansBengali';
 
-  /// Stitch-style hero gradients used across feature cards.
-  static const List<Color> heroGradient = <Color>[Color(0xFF156B36), deep];
-  static const List<Color> accentGradient = <Color>[seed, leaf];
+  /// Foliage gradients kept for icon tiles / FABs.
+  /// [heroGradient] now reads as the dark design's layered container stack.
+  static const List<Color> heroGradient = <Color>[
+    Color(0xFF0F1F14),
+    Color(0xFF132318),
+  ];
+  static const List<Color> accentGradient = <Color>[
+    Color(0xFF4DE082),
+    Color(0xFF6BFF8F),
+  ];
+
+  /// Soft glow accent used on scanner corners and hero cards.
+  static const Color glow = Color(0xFF4BE277);
 
   static ThemeData light() => _build(Brightness.light);
   static ThemeData dark() => _build(Brightness.dark);
@@ -21,66 +32,92 @@ class AppTheme {
   static ThemeData _build(Brightness brightness) {
     final bool isLight = brightness == Brightness.light;
 
-    final ColorScheme scheme = ColorScheme.fromSeed(
-      seedColor: seed,
-      brightness: brightness,
-    ).copyWith(
-      primary: isLight ? const Color(0xFF1B7A3D) : const Color(0xFF7BD69B),
-      onPrimary: isLight ? Colors.white : const Color(0xFF00391A),
-      primaryContainer: isLight ? const Color(0xFFC7EFD1) : const Color(0xFF14532B),
-      onPrimaryContainer:
-          isLight ? const Color(0xFF00210E) : const Color(0xFFB6F2C7),
-      secondary: isLight ? const Color(0xFF4E7A2D) : const Color(0xFFB7D48A),
-      onSecondary: isLight ? Colors.white : const Color(0xFF1A3000),
-      secondaryContainer:
-          isLight ? const Color(0xFFD6EBC0) : const Color(0xFF33471C),
-      onSecondaryContainer:
-          isLight ? const Color(0xFF152900) : const Color(0xFFD3E9B0),
-      tertiary: isLight ? const Color(0xFF7A6412) : const Color(0xFFE4C56A),
-      onTertiary: isLight ? Colors.white : const Color(0xFF2E2600),
-      tertiaryContainer:
-          isLight ? const Color(0xFFF6E6BF) : const Color(0xFF3D2F0C),
-      onTertiaryContainer:
-          isLight ? const Color(0xFF2A1F00) : const Color(0xFFEFDDA6),
-      error: isLight ? const Color(0xFFB3261E) : const Color(0xFFFFB4AB),
-      errorContainer:
-          isLight ? const Color(0xFFF9DEDC) : const Color(0xFF601410),
-      onErrorContainer:
-          isLight ? const Color(0xFF410E0B) : const Color(0xFFFFDAD6),
-      surface: isLight ? const Color(0xFFF6FBF4) : const Color(0xFF101611),
-      onSurface: isLight ? const Color(0xFF161D15) : const Color(0xFFE1EAE0),
-      onSurfaceVariant: isLight ? const Color(0xFF4C594B) : const Color(0xFFBECBBE),
-      surfaceContainerLowest:
-          isLight ? Colors.white : const Color(0xFF0A0F0A),
-      surfaceContainerLow:
-          isLight ? const Color(0xFFF0F7ED) : const Color(0xFF151C15),
-      surfaceContainer:
-          isLight ? const Color(0xFFEBF3E7) : const Color(0xFF1A2219),
-      surfaceContainerHigh:
-          isLight ? const Color(0xFFE5EFE1) : const Color(0xFF202A1E),
-      surfaceContainerHighest:
-          isLight ? const Color(0xFFDFEBD9) : const Color(0xFF263124),
-      outline: isLight ? const Color(0xFF7C8B7A) : const Color(0xFF879487),
-      outlineVariant: isLight ? const Color(0xFFCEDACB) : const Color(0xFF404C40),
-    );
+    // Dark scheme: exact tokens from the Stitch design.
+    // Light scheme: harmonized green family with the same structure.
+    final ColorScheme scheme = isLight
+        ? const ColorScheme(
+            brightness: Brightness.light,
+            primary: Color(0xFF006E2F),
+            onPrimary: Color(0xFFFFFFFF),
+            primaryContainer: Color(0xFFA6F2CF),
+            onPrimaryContainer: Color(0xFF004B1E),
+            secondary: Color(0xFF00B55D),
+            onSecondary: Color(0xFFFFFFFF),
+            secondaryContainer: Color(0xFFD9F7E2),
+            onSecondaryContainer: Color(0xFF003E1C),
+            tertiary: Color(0xFF3C6B54),
+            onTertiary: Color(0xFFFFFFFF),
+            tertiaryContainer: Color(0xFFD9F2E6),
+            onTertiaryContainer: Color(0xFF004934),
+            error: Color(0xFFB3261E),
+            onError: Color(0xFFFFFFFF),
+            errorContainer: Color(0xFFFFDAD6),
+            onErrorContainer: Color(0xFF690005),
+            surface: Color(0xFFF6FAF4),
+            onSurface: Color(0xFF18221A),
+            onSurfaceVariant: Color(0xFF4C594B),
+            surfaceContainerLowest: Color(0xFFFFFFFF),
+            surfaceContainerLow: Color(0xFFF1F8EF),
+            surfaceContainer: Color(0xFFEBF3E9),
+            surfaceContainerHigh: Color(0xFFE4EFE2),
+            surfaceContainerHighest: Color(0xFFDEEADC),
+            outline: Color(0xFF71816F),
+            outlineVariant: Color(0xFFC9D8C7),
+            inverseSurface: Color(0xFF18221A),
+            onInverseSurface: Color(0xFFECF3EA),
+            inversePrimary: Color(0xFF4BE277),
+          )
+        : const ColorScheme(
+            brightness: Brightness.dark,
+            primary: Color(0xFF4BE277),
+            onPrimary: Color(0xFF003915),
+            primaryContainer: Color(0xFF22C55E),
+            onPrimaryContainer: Color(0xFF004B1E),
+            secondary: Color(0xFF4DE082),
+            onSecondary: Color(0xFF003919),
+            secondaryContainer: Color(0xFF00B55D),
+            onSecondaryContainer: Color(0xFF003E1C),
+            tertiary: Color(0xFF8BD6B4),
+            onTertiary: Color(0xFF004A2E),
+            tertiaryContainer: Color(0xFF70BA9A),
+            onTertiaryContainer: Color(0xFF004934),
+            error: Color(0xFFFFB4AB),
+            onError: Color(0xFF690005),
+            errorContainer: Color(0xFF93000A),
+            onErrorContainer: Color(0xFFFFDAD6),
+            surface: Color(0xFF07170C),
+            onSurface: Color(0xFFD4E8D6),
+            onSurfaceVariant: Color(0xFFBCCBB9),
+            surfaceContainerLowest: Color(0xFF031107),
+            surfaceContainerLow: Color(0xFF0F1F14),
+            surfaceContainer: Color(0xFF132318),
+            surfaceContainerHigh: Color(0xFF1D2E22),
+            surfaceContainerHighest: Color(0xFF28392C),
+            outline: Color(0xFF869585),
+            outlineVariant: Color(0xFF3D4A3D),
+            inverseSurface: Color(0xFFD4E8D6),
+            onInverseSurface: Color(0xFF243428),
+            inversePrimary: Color(0xFF006E2F),
+          );
 
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
       colorScheme: scheme,
       fontFamily: fontFamily,
-      scaffoldBackgroundColor:
-          isLight ? const Color(0xFFF1F8EC) : const Color(0xFF0C110D),
+      scaffoldBackgroundColor: scheme.surface,
       appBarTheme: AppBarTheme(
-        backgroundColor: isLight ? const Color(0xFFF1F8EC) : const Color(0xFF0C110D),
+        backgroundColor: scheme.surface.withValues(alpha: 0.85),
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0.5,
+        shadowColor: Colors.black.withValues(alpha: 0.25),
         centerTitle: false,
         titleTextStyle: TextStyle(
           fontFamily: fontFamily,
-          fontSize: 20,
-          fontWeight: FontWeight.w700,
+          fontSize: 18,
+          fontWeight: FontWeight.w800,
+          letterSpacing: -0.3,
           color: scheme.onSurface,
         ),
         iconTheme: IconThemeData(color: scheme.onSurfaceVariant),
@@ -88,24 +125,15 @@ class AppTheme {
       cardTheme: CardThemeData(
         elevation: 1,
         margin: EdgeInsets.zero,
-        shadowColor: Colors.black.withValues(alpha: 0.06),
+        shadowColor: Colors.black.withValues(alpha: 0.25),
         surfaceTintColor: Colors.transparent,
-        color: isLight ? const Color(0xFFFCFFFB) : const Color(0xFF161E16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-          side: BorderSide(
-            color: isLight
-                ? const Color(0xFFDCE9D6)
-                : const Color(0xFF2B382B),
-          ),
-        ),
+        color: scheme.surfaceContainerLow,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
       dialogTheme: DialogThemeData(
-        backgroundColor: isLight ? Colors.white : const Color(0xFF161E16),
+        backgroundColor: scheme.surfaceContainerLow,
         surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         titleTextStyle: TextStyle(
           fontFamily: fontFamily,
           fontSize: 18,
@@ -113,92 +141,63 @@ class AppTheme {
           color: scheme.onSurface,
         ),
       ),
-      chipTheme: ChipThemeData(
-        backgroundColor: scheme.surfaceContainerHighest,
-        labelStyle: TextStyle(
-          fontFamily: fontFamily,
-          fontSize: 12.5,
-          color: scheme.onSurfaceVariant,
-        ),
-        side: BorderSide.none,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      dividerTheme: DividerThemeData(
+        color: scheme.outlineVariant.withValues(alpha: 0.4),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: isLight ? Colors.white : const Color(0xFF151C15),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        fillColor: scheme.surfaceContainerLow,
+        hintStyle: TextStyle(color: scheme.outline),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(
-            color: isLight ? const Color(0xFFD5E4D1) : const Color(0xFF2B382B),
-          ),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(
-            color: isLight ? const Color(0xFFD5E4D1) : const Color(0xFF2B382B),
-          ),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: scheme.primary, width: 1.6),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: scheme.primary, width: 1.4),
         ),
-        hintStyle: TextStyle(color: scheme.onSurfaceVariant),
-      ),
-      navigationBarTheme: NavigationBarThemeData(
-        backgroundColor:
-            isLight ? const Color(0xFFFBFDFA) : const Color(0xFF121812),
-        indicatorColor: scheme.primary.withValues(alpha: 0.16),
-        elevation: 0,
-        labelTextStyle: WidgetStatePropertyAll<TextStyle>(
-          TextStyle(
-            fontFamily: fontFamily,
-            fontSize: 11.5,
-            fontWeight: FontWeight.w600,
-            color: scheme.onSurface,
-          ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
         ),
       ),
-      textTheme: const TextTheme().apply(fontFamily: fontFamily),
-      dividerTheme: DividerThemeData(
-        color: scheme.outlineVariant.withValues(alpha: 0.6),
-        space: 1,
-        thickness: 1,
-      ),
-      snackBarTheme: SnackBarThemeData(
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: scheme.primary,
-        contentTextStyle: TextStyle(
+      chipTheme: ChipThemeData(
+        backgroundColor: scheme.surfaceContainer,
+        selectedColor: scheme.surfaceContainerHigh,
+        labelStyle: TextStyle(
           fontFamily: fontFamily,
-          color: scheme.onPrimary,
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: scheme.onSurfaceVariant,
         ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        side: BorderSide.none,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        shape: const StadiumBorder(),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           backgroundColor: scheme.primary,
           foregroundColor: scheme.onPrimary,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          shape: const StadiumBorder(),
           textStyle: const TextStyle(
             fontFamily: fontFamily,
-            fontWeight: FontWeight.w600,
-            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            fontSize: 14.5,
+            letterSpacing: 0.2,
           ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: scheme.primary,
-          side: BorderSide(color: scheme.primary.withValues(alpha: 0.45)),
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          side: BorderSide(color: scheme.primary.withValues(alpha: 0.4)),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+          shape: const StadiumBorder(),
           textStyle: const TextStyle(
             fontFamily: fontFamily,
             fontWeight: FontWeight.w600,
@@ -214,40 +213,29 @@ class AppTheme {
           ),
         ),
       ),
-      listTileTheme: ListTileThemeData(
-        titleTextStyle: TextStyle(
-          fontFamily: fontFamily,
-          fontSize: 15,
-          fontWeight: FontWeight.w600,
-          color: scheme.onSurface,
-        ),
-        subtitleTextStyle: TextStyle(
-          fontFamily: fontFamily,
-          fontSize: 12.5,
-          color: scheme.onSurfaceVariant,
-        ),
-        iconColor: scheme.onSurfaceVariant,
-      ),
-      progressIndicatorTheme: ProgressIndicatorThemeData(
-        linearTrackColor: scheme.surfaceContainerHighest,
-        linearMinHeight: 6,
-        color: scheme.primary,
-      ),
-      floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: scheme.primary,
-        foregroundColor: scheme.onPrimary,
-      ),
-      sliderTheme: SliderThemeData(
-        activeTrackColor: scheme.primary,
-        thumbColor: scheme.primary,
-        inactiveTrackColor: scheme.surfaceContainerHighest,
-      ),
-      segmentedButtonTheme: SegmentedButtonThemeData(
-        style: ButtonStyle(
-          side: WidgetStatePropertyAll<BorderSide>(
-            BorderSide(color: scheme.outlineVariant),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: scheme.surfaceContainerLow,
+        indicatorColor: scheme.primaryContainer,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        height: 68,
+        labelTextStyle: WidgetStatePropertyAll<TextStyle>(
+          TextStyle(
+            fontFamily: fontFamily,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: scheme.onSurfaceVariant,
           ),
         ),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: scheme.inverseSurface,
+        contentTextStyle: TextStyle(
+          fontFamily: fontFamily,
+          color: scheme.surface,
+        ),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
