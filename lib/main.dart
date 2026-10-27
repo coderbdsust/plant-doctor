@@ -58,7 +58,7 @@ class _NogorOronnoAppState extends State<NogorOronnoApp> {
         };
 
         return MaterialApp(
-          title: 'গাছের ডাক্তার',
+          title: 'উদ্ভিদ ডাক্তার',
           debugShowCheckedModeBanner: false,
           theme: AppTheme.light(),
           darkTheme: AppTheme.dark(),

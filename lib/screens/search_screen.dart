@@ -61,8 +61,8 @@ class _SearchScreenState extends State<SearchScreen> {
       _error = null;
     });
     try {
-      final List<WebSearchResult> results =
-          await widget.webSearchService.search(query);
+      final List<WebSearchResult> results = await widget.webSearchService
+          .search(query);
       if (!mounted) return;
       setState(() {
         _webResults = results;
@@ -96,7 +96,20 @@ class _SearchScreenState extends State<SearchScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('সার্চ'),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text('সার্চ'),
+            Text(
+              'গাইড ও ইন্টারনেট অনুসন্ধান',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: scheme.primary,
+              ),
+            ),
+          ],
+        ),
         actions: <Widget>[
           IconButton(
             tooltip: 'জেমিনি AI',
@@ -201,7 +214,8 @@ class _SearchScreenState extends State<SearchScreen> {
       return _Message(
         icon: Icons.search_off_rounded,
         title: 'কিছু পাওয়া যায়নি',
-        body: '"$query" সম্পর্কে গাইডে কিছু নেই। অন্য কোনো শব্দ দিয়ে চেষ্টা করুন '
+        body:
+            '"$query" সম্পর্কে গাইডে কিছু নেই। অন্য কোনো শব্দ দিয়ে চেষ্টা করুন '
             'অথবা ইন্টারনেটে সার্চ করুন।',
       );
     }
@@ -246,7 +260,8 @@ class _SearchScreenState extends State<SearchScreen> {
       return _Message(
         icon: Icons.travel_explore_rounded,
         title: 'ইন্টারনেটে সার্চ করুন',
-        body: 'যেকোনো বিষয়ে সার্চ করতে পারেন। ফলাফলের লিংকে ট্যাপ করে '
+        body:
+            'যেকোনো বিষয়ে সার্চ করতে পারেন। ফলাফলের লিংকে ট্যাপ করে '
             'ব্রাউজারে খুলুন, অথবা "গুগলে সার্চ" বোতামে সরাসরি গুগলে যান।',
         action: FilledButton.icon(
           onPressed: () => widget.onOpenAi,
@@ -278,8 +293,7 @@ class _SearchScreenState extends State<SearchScreen> {
           return Padding(
             padding: const EdgeInsets.only(bottom: 2),
             child: OutlinedButton.icon(
-              onPressed: () =>
-                  widget.webSearchService.openGoogleSearch(query),
+              onPressed: () => widget.webSearchService.openGoogleSearch(query),
               icon: const Icon(Icons.travel_explore, size: 18),
               label: Text('"$query" গুগলে সার্চ করুন'),
               style: OutlinedButton.styleFrom(
@@ -308,18 +322,32 @@ class _HitCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme scheme = theme.colorScheme;
+    final bool isLight = theme.brightness == Brightness.light;
 
     return Material(
       color: theme.cardTheme.color,
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(14),
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: theme.dividerColor),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isLight
+                  ? const Color(0xFFD1E7D8)
+                  : scheme.outline.withValues(alpha: 0.5),
+            ),
+            boxShadow: isLight
+                ? const <BoxShadow>[
+                    BoxShadow(
+                      color: Color(0x0A0D3823),
+                      blurRadius: 8,
+                      offset: Offset(0, 2),
+                    ),
+                  ]
+                : null,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -327,18 +355,29 @@ class _HitCard extends StatelessWidget {
               Row(
                 children: <Widget>[
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
-                      color: scheme.primary.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(7),
+                      color: isLight
+                          ? const Color(0xFFDCFCE7)
+                          : scheme.primary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: isLight
+                            ? const Color(0xFFBBF7D0)
+                            : scheme.primary.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Text(
                       'অধ্যায় ${hit.chapter.number}',
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: 10.5,
                         fontWeight: FontWeight.w700,
-                        color: scheme.primary,
+                        color: isLight
+                            ? const Color(0xFF065F46)
+                            : scheme.primary,
                       ),
                     ),
                   ),
@@ -348,8 +387,12 @@ class _HitCard extends StatelessWidget {
                       hit.step.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleSmall?.copyWith(
+                      style: TextStyle(
+                        fontSize: 14,
                         fontWeight: FontWeight.w700,
+                        color: isLight
+                            ? const Color(0xFF0A2E18)
+                            : scheme.onSurface,
                       ),
                     ),
                   ),
@@ -361,7 +404,9 @@ class _HitCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 13,
                   height: 1.6,
-                  color: scheme.onSurfaceVariant,
+                  color: isLight
+                      ? const Color(0xFF344E40)
+                      : scheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: 8),
@@ -397,18 +442,32 @@ class _WebResultCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme scheme = theme.colorScheme;
+    final bool isLight = theme.brightness == Brightness.light;
 
     return Material(
       color: theme.cardTheme.color,
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(14),
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: theme.dividerColor),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isLight
+                  ? const Color(0xFFD1E7D8)
+                  : scheme.outline.withValues(alpha: 0.5),
+            ),
+            boxShadow: isLight
+                ? const <BoxShadow>[
+                    BoxShadow(
+                      color: Color(0x0A0D3823),
+                      blurRadius: 8,
+                      offset: Offset(0, 2),
+                    ),
+                  ]
+                : null,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -443,10 +502,7 @@ class _WebResultCard extends StatelessWidget {
                       result.url,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        color: scheme.primary,
-                      ),
+                      style: TextStyle(fontSize: 11.5, color: scheme.primary),
                     ),
                   ),
                 ],

@@ -10,16 +10,16 @@ import 'plant_doctor_screen.dart';
 const List<String> _roofTips = <String>[
   'টবের কিনারা ঘেঁষে গোল নালা কেটে অনুখাদ্য দিয়ে মাটি ঢেকে দিন — পোড়া রোধ হবে।',
   'হাফ ড্রাম সাইজের টবে ৪ মুঠ সার, ছোট টবে ২ মুঠ — ২৫ দিন পর প্রয়োগ করুন।',
-  'সকাল ৯টার আগে বা বিকাল ৪টার পর বাগানে পানি দিন — দুপুরের রোদে পাতা বন্যানয় নয়।',
-  'পাতা ঝরে পড়লে খাবার পানির ঘাটতি ভাবার আগে মাটির নিচে আলগা করে দেখুন — শিকড়ে পানি জমে থাকলে ঝরে।',
-  'লেবুর ক্লোরোসিস হলে জিংক + আয়রন মুক্ত গোড়া স্প্রে করুন।',
-  'মিলিবাগ আক্রমণে ইমিটাফ/নিমতেল ১৫ দিনে একবার স্প্রে করুন ও আনাড়ি কচি পাতা বাঁধুন।',
-  'ছত্রাক দমনে ম্যানকোজেব/ট্রাইকোডার্মা — সাবিডা প্রথমে, কারণ মাটির নজরদারি বার্তা ও খেনা বর্জন করে।',
-  'গাছের বৃদ্ধি থেমে গেলে দেখুন টবটি বেন্ডিং বাইন্ডিং উপযুক্ত কিনা — ছোট টবে গাছ থেমে যায়।',
-  'সিড ট্রেতে কোকুপিট মিশ্রণে বীজ রোপণ করুন — জার্মিনেশন সফুট্টবে দ্রুত।',
-  'টবের নিচে ব্লক পাথর দিন যাতে পানি-রুদন না লাগে — শিকড়ে আর্দ্র বাতাস চলবে।',
-  'গ্যারেজ পাশের বাগানে আলের ছায়া থাকে — পুষ্টি ঘাটতিতে সাপ্তাহিক বেন্ডিং সার দিন।',
-  'ফড়িং শিকার ধরার আগে ব্লু/হলুদ স্টিকি প্যাড টবের পাশে লাগান — আদি শুনে দেওয়া কাজ।',
+  'সকাল ৯টার আগে বা বিকাল ৪টার পর বাগানে পানি দিন — দুপুরের রোদে পানি দিলে শিকড় পোড়ে।',
+  'পাতা ঝরে পড়লে পানির ঘাটতি ভাবার আগে মাটি আলগা করে দেখুন — শিকড়ে পানি জমে থাকলে ঝরে।',
+  'লেবুর ক্লোরোসিস হলে জিংক + আয়রন মিশিয়ে গোড়ায় স্প্রে করুন।',
+  'মিলিবাগ আক্রমণে ইমিটাফ/নিমতেল ১৫ দিনে একবার স্প্রে করুন — কচি পাতার পিঠে ভালো করে দিন।',
+  'ছত্রাক দমনে প্রথমে ট্রাইকোডার্মা দিন — না হলে ম্যানকোজেব, ১৫ দিন ব্যবধানে।',
+  'গাছের বৃদ্ধি থেমে গেলে দেখুন টব ছোট হয়ে গেছে কি না — শিকড় বেরিয়ে এলে বড় টবে রিপোট করুন।',
+  'সিড ট্রেতে কোকোপিট মিশ্রণে বীজ রোপণ করুন — অঙ্কুরোদগম দ্রুত হবে।',
+  'টবের নিচে ব্লক পাথর বসান যাতে পানি জমা না হয় — শিকড়ে বাতাস চলাচল থাকবে।',
+  'পুষ্টি ঘাটতি দেখা দিলে ইউরিয়া, টিএসপি ও এমওপি সুষম অনুপাতে সপ্তাহে একবার দিন।',
+  'ব্লু/হলুদ স্টিকি প্যাড টবের পাশে লাগান — উড়ন্ত পোকা দমনের প্রথম কাজ।',
 ];
 
 class HomeScreen extends StatefulWidget {
@@ -180,6 +180,7 @@ class _TopBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme scheme = theme.colorScheme;
+    final bool isDark = scheme.brightness == Brightness.dark;
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -194,23 +195,30 @@ class _TopBar extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: AppTheme.accentGradient,
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              // ডার্ক: গ্লো-গ্রেডিয়েন্ট টাইল • লাইট গ্রিন: emerald-100 টাইল
+              color: isDark ? null : scheme.primaryContainer,
+              gradient: isDark
+                  ? const LinearGradient(
+                      colors: AppTheme.accentGradient,
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    )
+                  : null,
               borderRadius: BorderRadius.circular(12),
-              boxShadow: <BoxShadow>[
-                BoxShadow(
-                  color: AppTheme.glow.withValues(alpha: 0.35),
-                  blurRadius: 14,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+              border: isDark ? null : Border.all(color: scheme.outlineVariant),
+              boxShadow: isDark
+                  ? <BoxShadow>[
+                      BoxShadow(
+                        color: AppTheme.glow.withValues(alpha: 0.35),
+                        blurRadius: 14,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
+                  : null,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.local_florist_rounded,
-              color: Color(0xFF003915),
+              color: isDark ? const Color(0xFF003915) : scheme.primary,
               size: 22,
             ),
           ),
@@ -226,12 +234,13 @@ class _TopBar extends StatelessWidget {
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w800,
                     letterSpacing: -0.3,
-                    color: scheme.primary,
+                    // ডার্ক: প্রাইমারি প্রি • লাইট: গাঢ় সবুজ টেক্সট (design: text-primary)
+                    color: isDark ? scheme.primary : scheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 1),
                 Text(
-                  'PlantDoc AI • উদ্ভিদ ও বাগান সহকারী',
+                  'উদ্ভিদ ও বাগান সহকারী',
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: scheme.onSurfaceVariant,
@@ -306,9 +315,10 @@ class _SearchPill extends StatelessWidget {
           borderRadius: BorderRadius.circular(999),
           boxShadow: <BoxShadow>[
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.18),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+              color: const Color(0x0A0D3823), // green ambient Level-1
+              blurRadius: 20,
+              spreadRadius: -2,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
@@ -318,7 +328,7 @@ class _SearchPill extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                'গাইডে সার্চ করুন বা প্রশ্ন জিজ্ঞুন...',
+                'গাইডে সার্চ করুন বা প্রশ্ন লিখুন...',
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: scheme.outline,
@@ -358,6 +368,7 @@ class _ChapterChips extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme scheme = theme.colorScheme;
+    final bool isDark = scheme.brightness == Brightness.dark;
 
     String shortTitle(GuideChapter c) {
       final List<String> words = c.title.trim().split(RegExp(r'\s+'));
@@ -386,10 +397,17 @@ class _ChapterChips extends StatelessWidget {
               alignment: Alignment.center,
               padding: const EdgeInsets.symmetric(horizontal: 13),
               decoration: BoxDecoration(
-                color: selected
-                    ? scheme.surfaceContainerHigh
-                    : scheme.surfaceContainer,
+                // Filter chip spec: white rest + 12% pine border,
+                // active = #15803D fill with white text.
+                color: selected ? scheme.primary : scheme.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(999),
+                border: selected
+                    ? null
+                    : Border.all(
+                        color: isDark
+                            ? scheme.outlineVariant
+                            : const Color(0x1F153E2B),
+                      ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -399,7 +417,7 @@ class _ChapterChips extends StatelessWidget {
                       width: 6,
                       height: 6,
                       decoration: BoxDecoration(
-                        color: selected ? scheme.primary : scheme.outline,
+                        color: selected ? scheme.onPrimary : scheme.primary,
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -408,10 +426,8 @@ class _ChapterChips extends StatelessWidget {
                   Text(
                     isAll ? 'সকল নির্দেশিকা' : shortTitle(c!),
                     style: theme.textTheme.labelMedium?.copyWith(
-                      color: selected
-                          ? scheme.primary
-                          : scheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w700,
+                      color: selected ? scheme.onPrimary : scheme.onSurface,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
@@ -432,16 +448,20 @@ class _ScanHero extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme scheme = theme.colorScheme;
+    final bool isDark = scheme.brightness == Brightness.dark;
 
     return Container(
+      // Hero scan summary: rounded-2xl (2rem) + soft sage border.
       decoration: BoxDecoration(
         color: scheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(isDark ? 14 : 32),
+        border: isDark ? null : Border.all(color: const Color(0x14153E2B)),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.22),
-            blurRadius: 14,
-            offset: const Offset(0, 5),
+            color: const Color(0x0A0D3823),
+            blurRadius: 20,
+            spreadRadius: -2,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -586,7 +606,7 @@ class _ScanHero extends StatelessWidget {
                     ),
                     icon: Icon(Icons.center_focus_strong_rounded, size: 18),
                     label: const Text(
-                      'গাছের ডাক্তার খুলুন',
+                      'উদ্ভিদ ডাক্তার খুলুন',
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -785,6 +805,7 @@ class _ChapterCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme scheme = theme.colorScheme;
+    final bool isDark = scheme.brightness == Brightness.dark;
     final IconData icon =
         _chapterIcons[chapter.index < _chapterIcons.length
             ? chapter.index
@@ -793,21 +814,26 @@ class _ChapterCard extends StatelessWidget {
     return PressableScale(
       onTap: onTap,
       child: Material(
+        // Diagnostic plant card: white surface, 24px radius, sage border.
         color: scheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
-        shadowColor: Colors.black.withValues(alpha: 0.22),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(isDark ? 12 : 24),
+          side: isDark
+              ? BorderSide.none
+              : const BorderSide(color: Color(0x14153E2B)),
+        ),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(isDark ? 12 : 24),
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(14),
             child: Row(
               children: <Widget>[
                 Container(
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: scheme.primary.withValues(alpha: 0.14),
+                    color: scheme.primaryContainer,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(icon, color: scheme.primary, size: 20),

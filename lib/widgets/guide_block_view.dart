@@ -4,6 +4,10 @@ import '../models/guide.dart';
 import 'inline_text.dart';
 
 /// Renders a list of [GuideBlock]s.
+///
+/// Light theme strictly follows the Stitch "Disease & Remedies" directory
+/// design: pine body copy (#20402E), emerald step numbers (#047857),
+/// mint info boxes (#F5FBF7 / #D6EBD9) and hairline titles (#E2EFE7).
 class GuideBlockView extends StatelessWidget {
   const GuideBlockView({
     super.key,
@@ -14,20 +18,60 @@ class GuideBlockView extends StatelessWidget {
   final List<GuideBlock> blocks;
   final double fontScale;
 
+  // Exact hexes from the light directory design.
+  static const Color _body = Color(0xFF20402E);
+  static const Color _marker = Color(0xFF047857);
+  static const Color _hairline = Color(0xFFE2EFE7);
+  static const Color _infoBg = Color(0xFFF5FBF7);
+  static const Color _infoBorder = Color(0xFFD6EBD9);
+
+  static const List<String> _bengaliDigits = <String>[
+    '০',
+    '১',
+    '২',
+    '৩',
+    '৪',
+    '৫',
+    '৬',
+    '৭',
+    '৮',
+    '৯',
+  ];
+
+  /// Western digits → Bengali digits ("12" → "১২").
+  static String toBengali(int value) {
+    return value
+        .toString()
+        .split('')
+        .map((String d) => _bengaliDigits[int.parse(d)])
+        .join();
+  }
+
+  /// Replaces every western digit inside [text] with its Bengali form.
+  static String digitize(String text) {
+    return text
+        .split('')
+        .map(
+          (String d) => d.codeUnitAt(0) >= 0x30 && d.codeUnitAt(0) <= 0x39
+              ? _bengaliDigits[d.codeUnitAt(0) - 0x30]
+              : d,
+        )
+        .join();
+  }
+
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme scheme = theme.colorScheme;
+    final bool isLight = theme.brightness == Brightness.light;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         for (int i = 0; i < blocks.length; i++)
           Padding(
-            padding: EdgeInsets.only(
-              bottom: i == blocks.length - 1 ? 0 : 14,
-            ),
-            child: _buildBlock(context, blocks[i], scheme),
+            padding: EdgeInsets.only(bottom: i == blocks.length - 1 ? 0 : 14),
+            child: _buildBlock(context, blocks[i], scheme, isLight),
           ),
       ],
     );
@@ -37,41 +81,46 @@ class GuideBlockView extends StatelessWidget {
     BuildContext context,
     GuideBlock block,
     ColorScheme scheme,
+    bool isLight,
   ) {
     switch (block.type) {
       case BlockType.paragraph:
         return InlineText(
           block.text,
           style: TextStyle(
-            fontSize: 15.5 * fontScale,
+            fontSize: 15 * fontScale,
             height: 1.75,
-            color: scheme.onSurface,
+            color: isLight ? _body : scheme.onSurface,
           ),
         );
 
       case BlockType.quote:
+        // Design: mint info panel with an icon lead — "লক্ষণ ও আক্রান্ত স্থান".
         return Container(
-          padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: scheme.secondaryContainer.withValues(alpha: 0.45),
-            borderRadius: BorderRadius.circular(8),
-            border: Border(
-              left: BorderSide(color: scheme.tertiary, width: 4),
-            ),
+            color: isLight
+                ? _infoBg
+                : scheme.secondaryContainer.withValues(alpha: 0.45),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: isLight ? _infoBorder : scheme.outline),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Icon(Icons.info_outline, size: 18, color: scheme.tertiary),
+              Icon(
+                Icons.tips_and_updates_outlined,
+                size: 16,
+                color: isLight ? _marker : scheme.tertiary,
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: InlineText(
                   block.text,
                   style: TextStyle(
-                    fontSize: 14.5 * fontScale,
-                    height: 1.7,
-                    color: scheme.onSurface,
-                    fontStyle: FontStyle.italic,
+                    fontSize: 13.5 * fontScale,
+                    height: 1.68,
+                    color: isLight ? _body : scheme.onSurface,
                   ),
                 ),
               ),
@@ -85,6 +134,7 @@ class GuideBlockView extends StatelessWidget {
           ordered: false,
           fontScale: fontScale,
           scheme: scheme,
+          isLight: isLight,
         );
 
       case BlockType.numbered:
@@ -93,13 +143,19 @@ class GuideBlockView extends StatelessWidget {
           ordered: true,
           fontScale: fontScale,
           scheme: scheme,
+          isLight: isLight,
         );
 
       case BlockType.table:
-        return _TableView(block: block, fontScale: fontScale);
+        return _TableView(block: block, fontScale: fontScale, isLight: isLight);
 
       case BlockType.divider:
-        return Divider(color: scheme.outlineVariant);
+        return Divider(
+          color: isLight
+              ? _hairline
+              : scheme.outlineVariant.withValues(alpha: 0.5),
+          thickness: 1,
+        );
     }
   }
 }
@@ -110,12 +166,14 @@ class _ListView extends StatelessWidget {
     required this.ordered,
     required this.fontScale,
     required this.scheme,
+    required this.isLight,
   });
 
   final List<GuideListItem> items;
   final bool ordered;
   final double fontScale;
   final ColorScheme scheme;
+  final bool isLight;
 
   @override
   Widget build(BuildContext context) {
@@ -132,6 +190,7 @@ class _ListView extends StatelessWidget {
               depth: 0,
               fontScale: fontScale,
               scheme: scheme,
+              isLight: isLight,
             ),
           ),
       ],
@@ -148,6 +207,7 @@ class _ListEntry extends StatelessWidget {
     required this.depth,
     required this.fontScale,
     required this.scheme,
+    required this.isLight,
   });
 
   final GuideListItem item;
@@ -156,12 +216,21 @@ class _ListEntry extends StatelessWidget {
   final int depth;
   final double fontScale;
   final ColorScheme scheme;
+  final bool isLight;
+
+  // Step boxes use bold emerald "১." markers, like the design's
+  // "ধাপে ধাপে প্রয়োগবিধি" rows.
+  static const Color _marker = Color(0xFF047857);
+  static const Color _body = Color(0xFF20402E);
 
   @override
   Widget build(BuildContext context) {
-    final Color marker = depth == 0
-        ? scheme.primary
-        : scheme.primary.withValues(alpha: 0.65);
+    final Color marker = isLight
+        ? (depth == 0 ? _marker : _marker.withValues(alpha: 0.65))
+        : (depth == 0
+              ? scheme.primary
+              : scheme.primary.withValues(alpha: 0.65));
+    final Color textColor = isLight ? _body : scheme.onSurface;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -173,10 +242,12 @@ class _ListEntry extends StatelessWidget {
               width: 26,
               child: ordered
                   ? Text(
-                      '${item.order ?? '${index + 1}'}.',
+                      item.order == null
+                          ? '${GuideBlockView.toBengali(index + 1)}.'
+                          : '${GuideBlockView.digitize(item.order!)}.',
                       style: TextStyle(
-                        fontSize: 14.5 * fontScale,
-                        height: 1.7,
+                        fontSize: 13.5 * fontScale,
+                        height: 1.68,
                         fontWeight: FontWeight.w700,
                         color: marker,
                       ),
@@ -197,9 +268,9 @@ class _ListEntry extends StatelessWidget {
               child: InlineText(
                 item.text,
                 style: TextStyle(
-                  fontSize: 15 * fontScale,
-                  height: 1.72,
-                  color: scheme.onSurface,
+                  fontSize: 14.5 * fontScale,
+                  height: 1.7,
+                  color: textColor,
                 ),
               ),
             ),
@@ -213,6 +284,7 @@ class _ListEntry extends StatelessWidget {
               ordered: ordered,
               fontScale: fontScale * 0.96,
               scheme: scheme,
+              isLight: isLight,
             ),
           ),
       ],
@@ -221,10 +293,24 @@ class _ListEntry extends StatelessWidget {
 }
 
 class _TableView extends StatelessWidget {
-  const _TableView({required this.block, required this.fontScale});
+  const _TableView({
+    required this.block,
+    required this.fontScale,
+    required this.isLight,
+  });
 
   final GuideBlock block;
   final double fontScale;
+  final bool isLight;
+
+  // Spec-metric look: white card, sage border, mint header,
+  // gray labels and bold pine values.
+  static const Color _cardBorder = Color(0xFFD1E7DD);
+  static const Color _headerBg = Color(0xFFF5FBF7);
+  static const Color _headerText = Color(0xFF047857);
+  static const Color _label = Color(0xFF5D806A);
+  static const Color _value = Color(0xFF0F2E1E);
+  static const Color _line = Color(0xFFD6EBD9);
 
   @override
   Widget build(BuildContext context) {
@@ -232,16 +318,19 @@ class _TableView extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: scheme.outlineVariant),
-        borderRadius: BorderRadius.circular(8),
+        color: isLight ? Colors.white : scheme.surfaceContainerLow,
+        border: Border.all(color: isLight ? _cardBorder : scheme.outline),
+        borderRadius: BorderRadius.circular(12),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: <Widget>[
           if (block.headers.isNotEmpty)
             Container(
-              color: scheme.primary.withValues(alpha: 0.10),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              color: isLight
+                  ? _headerBg
+                  : scheme.primary.withValues(alpha: 0.10),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
               child: Row(
                 children: <Widget>[
                   for (int i = 0; i < block.headers.length; i++)
@@ -250,9 +339,9 @@ class _TableView extends StatelessWidget {
                       child: InlineText(
                         block.headers[i],
                         style: TextStyle(
-                          fontSize: 13.5 * fontScale,
+                          fontSize: 12.5 * fontScale,
                           fontWeight: FontWeight.w700,
-                          color: scheme.primary,
+                          color: isLight ? _headerText : scheme.primary,
                         ),
                       ),
                     ),
@@ -264,7 +353,9 @@ class _TableView extends StatelessWidget {
               decoration: BoxDecoration(
                 border: Border(
                   top: BorderSide(
-                    color: scheme.outlineVariant.withValues(alpha: 0.6),
+                    color: isLight
+                        ? _line
+                        : scheme.outlineVariant.withValues(alpha: 0.6),
                   ),
                 ),
               ),
@@ -278,11 +369,19 @@ class _TableView extends StatelessWidget {
                       child: InlineText(
                         block.rows[r][c],
                         style: TextStyle(
-                          fontSize: 13.5 * fontScale,
+                          // First column acts as the spec label (gray, small),
+                          // value columns are bold pine, like the design's
+                          // "ওষুধের নাম / অনুপাত মাত্রা / প্রয়োগ রুটিন" grid.
+                          fontSize: (c == 0 ? 11.5 : 12.5) * fontScale,
                           height: 1.6,
-                          color: scheme.onSurface,
-                          fontWeight:
-                              c == 0 ? FontWeight.w600 : FontWeight.w400,
+                          color: isLight
+                              ? (c == 0 ? _label : _value)
+                              : (c == 0
+                                    ? scheme.onSurfaceVariant
+                                    : scheme.onSurface),
+                          fontWeight: c == 0
+                              ? FontWeight.w600
+                              : FontWeight.w700,
                         ),
                       ),
                     ),

@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart' show compute, kIsWeb;
 import 'package:image/image.dart' as img;
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// One saved diagnosis result from the গাছের ডাক্তার screen.
+/// One saved diagnosis result from the উদ্ভিদ ডাক্তার screen.
 class PlantHistoryEntry {
   const PlantHistoryEntry({
     required this.id,
@@ -54,7 +54,7 @@ Uint8List _makeThumbnail(Uint8List bytes) {
   return img.encodeJpg(resized, quality: 55);
 }
 
-/// Persists গাছের ডাক্তার diagnosis results in shared_preferences,
+/// Persists উদ্ভিদ ডাক্তার diagnosis results in shared_preferences,
 /// newest first, capped at [maxEntries].
 class PlantHistoryService {
   static const String _key = 'plant_history_entries';

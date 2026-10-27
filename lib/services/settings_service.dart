@@ -30,8 +30,8 @@ class SettingsService {
     await _prefs.setString(_kModel, value);
   }
 
-  /// 'system' | 'light' | 'dark'
-  String get themeMode => _prefs.getString(_kThemeMode) ?? 'system';
+  /// 'system' | 'light' | 'dark' — ডিফল্ট: Stitch "Light Green" ভ্যারিয়েন্ট (light)।
+  String get themeMode => _prefs.getString(_kThemeMode) ?? 'light';
 
   Future<void> setThemeMode(String value) async {
     await _prefs.setString(_kThemeMode, value);

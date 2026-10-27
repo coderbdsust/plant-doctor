@@ -35,9 +35,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final ThemeData theme = Theme.of(context);
     final ColorScheme scheme = theme.colorScheme;
     final AppController controller = widget.controller;
+    final bool isLight = theme.brightness == Brightness.light;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('সেটিংস')),
+      appBar: AppBar(
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text('সেটিংস'),
+            Text(
+              'অ্যাপ কনফিগারেশন',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: scheme.primary,
+              ),
+            ),
+          ],
+        ),
+      ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         children: <Widget>[
@@ -78,7 +94,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       if (!mounted) return;
                       setState(() => _copied = true);
                       messenger.showSnackBar(
-                        const SnackBar(content: Text('API key সংরক্ষিত হয়েছে')),
+                        const SnackBar(
+                          content: Text('API key সংরক্ষিত হয়েছে'),
+                        ),
                       );
                     },
                   ),
@@ -114,7 +132,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             contentPadding: EdgeInsets.zero,
             value: controller.settings.useGoogleSearch,
             onChanged: (bool value) => controller.setUseGoogleSearch(value),
-            title: const Text('গুগল সার্ক ব্যবহার করুন'),
+            title: const Text('গুগল সার্চ ব্যবহার করুন'),
             subtitle: const Text(
               'জেমিনি উত্তর দেওয়ার আগে ওয়েব থেকে তথ্য খুঁজবে',
               style: TextStyle(fontSize: 12),
@@ -176,8 +194,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: scheme.primaryContainer.withValues(alpha: 0.35),
-              borderRadius: BorderRadius.circular(10),
+              color: isLight
+                  ? Colors.white
+                  : scheme.primaryContainer.withValues(alpha: 0.35),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: isLight
+                    ? const Color(0xFFD1E7DD)
+                    : scheme.outline.withValues(alpha: 0.5),
+              ),
+              boxShadow: isLight
+                  ? const <BoxShadow>[
+                      BoxShadow(
+                        color: Color(0x0A0D3823),
+                        blurRadius: 8,
+                        offset: Offset(0, 2),
+                      ),
+                    ]
+                  : null,
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -189,7 +223,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       Text(
-                        'গাছের ডাক্তার',
+                        'উদ্ভিদ ডাক্তার',
                         style: theme.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w800,
                         ),
@@ -230,6 +264,7 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme scheme = theme.colorScheme;
+    final bool isLight = theme.brightness == Brightness.light;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -238,10 +273,21 @@ class _SectionTitle extends StatelessWidget {
           width: 34,
           height: 34,
           decoration: BoxDecoration(
-            color: AppTheme.seed.withValues(alpha: 0.12),
+            color: isLight
+                ? const Color(0xFFF5FBF7)
+                : AppTheme.seed.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isLight
+                  ? const Color(0xFFD6EBD9)
+                  : AppTheme.seed.withValues(alpha: 0.25),
+            ),
           ),
-          child: Icon(icon, size: 18, color: AppTheme.seed),
+          child: Icon(
+            icon,
+            size: 18,
+            color: isLight ? const Color(0xFF047857) : AppTheme.seed,
+          ),
         ),
         const SizedBox(width: 11),
         Expanded(
@@ -250,15 +296,20 @@ class _SectionTitle extends StatelessWidget {
             children: <Widget>[
               Text(
                 title,
-                style: theme.textTheme.titleSmall?.copyWith(
+                style: TextStyle(
+                  fontSize: 13.5,
                   fontWeight: FontWeight.w700,
+                  color: isLight ? const Color(0xFF0A2E18) : scheme.onSurface,
                 ),
               ),
+              const SizedBox(height: 1),
               Text(
                 subtitle,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                  fontSize: 12,
+                style: TextStyle(
+                  fontSize: 11.5,
+                  color: isLight
+                      ? const Color(0xFF4A6B57)
+                      : scheme.onSurfaceVariant,
                 ),
               ),
             ],

@@ -1,14 +1,17 @@
 import 'dart:convert';
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart' show compute, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../models/diagnosis.dart';
 import '../services/gemini_service.dart';
 import '../services/plant_history_service.dart';
 import '../state/app_controller.dart';
 import '../theme/app_theme.dart';
+import '../widgets/diagnosis_report.dart';
 
 /// Runs in a background isolate so a large photo never freezes or crashes
 /// the UI thread while being base64-encoded.
@@ -49,10 +52,23 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
   final PlantHistoryService _history = const PlantHistoryService();
   bool? _lastSaveOk;
   List<PlantHistoryEntry> _recent = const <PlantHistoryEntry>[];
+  String _reportId = '#PLNT-8842';
+
+  /// Gemini may return structured JSON — render the clinical report when it
+  /// does, and fall back to plain text otherwise.
+  DiagnosisReport? get _parsedReport {
+    final GeminiReply? reply = _reply;
+    if (reply == null) return null;
+    return DiagnosisReport.tryParse(reply.text);
+  }
 
   @override
   void initState() {
     super.initState();
+    // Web-প্রিভিউ হ্যাচ: /?demo দিলে মক JSON দিয়ে ক্লিনিক্যাল রিপোর্ট দেখা যায়।
+    if (kIsWeb && Uri.base.queryParameters.containsKey('demo')) {
+      _reply = GeminiReply(text: _demoReportJson);
+    }
     _reloadRecent();
   }
 
@@ -126,7 +142,7 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
     final String raw = e.toString().toLowerCase();
     if (raw.contains('camera') || raw.contains('permission')) {
       return 'ক্যামেরা/গ্যালারির অনুমতি দেওয়া হয়নি। ফোনের Settings → Apps → '
-          'গাছের ডাক্তার → Permissions থেকে Camera ও Photos অনুমতি চালু করুন।';
+          'উদ্ভিদ ডাক্তার → Permissions থেকে Camera ও Photos অনুমতি চালু করুন।';
     }
     if (raw.contains('activity') || raw.contains('unavailable')) {
       return 'ফোনে উপযুক্ত ক্যামেরা/গ্যালারি অ্যাপ পাওয়া যায়নি। '
@@ -158,7 +174,11 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
         additionalPrompt: _note.text,
       );
       if (!mounted) return;
-      setState(() => _reply = reply);
+      setState(() {
+        _reply = reply;
+        // ডিজাইনের #PLNT-8842 স্টাইলে প্রতি রিপোর্টে নতুন আইডি।
+        _reportId = '#PLNT-${1000 + math.Random().nextInt(9000)}';
+      });
       await _saveToHistory(reply);
     } catch (e) {
       if (!mounted) return;
@@ -173,11 +193,11 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
   String _analyzeErrorMessage(Object e) {
     final String raw = e.toString().toLowerCase();
     if (raw.contains('out of memory') || raw.contains('oom')) {
-      return 'ফোনের মেমোরি কম এছে (RAM)। অন্য অ্যাপ বন্ধ করে আবার চেষ্টা করুন, '
+      return 'ফোনের মেমোরি কম পড়েছে (RAM)। অন্য অ্যাপ বন্ধ করে আবার চেষ্টা করুন, '
           'অথবা ছোট ছবি (০.৫-১ MB) দিয়ে চেষ্টা করুন।';
     }
     if (e is FormatException) {
-      return 'সার্ভার থেকে অপ্রত্যাশিত উত্তর এছে। কিছুক্ষণ পর আবার চেষ্টা করুন।';
+      return 'সার্ভার থেকে অপ্রত্যাশিত উত্তর এসেছে। কিছুক্ষণ পর আবার চেষ্টা করুন।';
     }
     return e.toString();
   }
@@ -190,7 +210,23 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('গাছের ডাক্তার'),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              'উদ্ভিদ ডাক্তার',
+              style: theme.appBarTheme.titleTextStyle?.copyWith(fontSize: 17),
+            ),
+            Text(
+              'উদ্ভিদ রোগ নির্ণয় ক্যামেরা',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: scheme.primary,
+              ),
+            ),
+          ],
+        ),
         actions: <Widget>[
           IconButton(
             tooltip: 'সাভ করা ফলাফল',
@@ -250,6 +286,7 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
             onGallery: () => _pick(ImageSource.gallery),
             onCamera: () => _pick(ImageSource.camera),
             onScan: _analyze,
+            onHistory: _openHistory,
           ),
           const SizedBox(height: 10),
           TextField(
@@ -284,54 +321,55 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
               ),
             ),
             const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: scheme.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: <BoxShadow>[
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.20),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            if (_parsedReport != null)
+              DiagnosisReportHeader(reportId: _reportId, rawText: _reply!.text)
+            else ...<Widget>[
+              Row(
                 children: <Widget>[
-                  Row(
-                    children: <Widget>[
-                      Icon(
-                        Icons.psychology_rounded,
-                        size: 16,
-                        color: scheme.primary,
-                      ),
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          'AI নির্ণয় • ${s.model}',
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: scheme.primary,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                    ],
+                  Icon(
+                    Icons.psychology_rounded,
+                    size: 16,
+                    color: scheme.primary,
                   ),
-                  const SizedBox(height: 8),
-                  SelectableText(
-                    _reply!.text,
-                    style: TextStyle(
-                      fontSize: 15,
-                      height: 1.8,
-                      color: scheme.onSurface,
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      'AI নির্ণয় • ${s.model}',
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: scheme.primary,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
                 ],
               ),
-            ),
+            ],
+            const SizedBox(height: 8),
+            if (_parsedReport != null)
+              DiagnosisReportView(
+                report: _parsedReport!,
+                imageBytes: _previewBytes,
+                reportId: _reportId,
+                rawText: _reply!.text,
+              )
+            else
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: scheme.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: scheme.outline),
+                ),
+                child: SelectableText(
+                  _reply!.text,
+                  style: TextStyle(
+                    fontSize: 15,
+                    height: 1.8,
+                    color: scheme.onSurface,
+                  ),
+                ),
+              ),
             if (_lastSaveOk != null) ...<Widget>[
               const SizedBox(height: 8),
               Row(
@@ -399,19 +437,34 @@ class _StatusPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme scheme = theme.colorScheme;
+    final bool isLight = theme.brightness == Brightness.light;
 
+    // Design: white pill, glowing emerald dot, auto_awesome lead, and an
+    // emerald-100 accuracy badge on the right.
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerHigh.withValues(alpha: 0.9),
+        color: isLight
+            ? Colors.white
+            : scheme.surfaceContainerHigh.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: isLight
+              ? const Color(0xFFD1E7D8)
+              : scheme.outline.withValues(alpha: 0.5),
+        ),
+        boxShadow: isLight
+            ? const <BoxShadow>[
+                BoxShadow(color: Color(0x0A0D3823), blurRadius: 6),
+              ]
+            : null,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           Container(
-            width: 9,
-            height: 9,
+            width: 8,
+            height: 8,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: scheme.primary,
@@ -429,9 +482,10 @@ class _StatusPill extends StatelessWidget {
             child: Text(
               '$model সক্রিয়',
               overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.labelSmall?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: scheme.primary,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: isLight ? const Color(0xFF0F2E1E) : scheme.onSurface,
               ),
             ),
           ),
@@ -439,13 +493,22 @@ class _StatusPill extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
-              color: scheme.surfaceContainer,
+              color: isLight
+                  ? const Color(0xFFDCFCE7)
+                  : scheme.primary.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: isLight
+                    ? const Color(0xFFBBF7D0)
+                    : scheme.primary.withValues(alpha: 0.35),
+              ),
             ),
             child: Text(
               'তাত্ক্ষণিক নিদান',
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: scheme.primary.withValues(alpha: 0.9),
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: isLight ? const Color(0xFF065F46) : scheme.primary,
               ),
             ),
           ),
@@ -492,194 +555,303 @@ class _ViewfinderState extends State<_Viewfinder>
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme scheme = theme.colorScheme;
     final Color glow = AppTheme.glow;
 
+    // Design: rounded-3xl black canvas with a centered hairline reticle,
+    // HUD tracking chip (top) and focus guidance chip (bottom).
     return AspectRatio(
       aspectRatio: 4 / 5,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: Stack(
-          fit: StackFit.expand,
-          children: <Widget>[
-            // বেস
-            Container(
-              color: scheme.surfaceContainerLowest,
-              child: widget.bytes != null
-                  ? Image.memory(
-                      widget.bytes!,
-                      fit: BoxFit.cover,
-                      gaplessPlayback: true,
-                      errorBuilder: (_, _, _) => Center(
-                        child: Text(
-                          widget.imageName ?? '',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: scheme.onSurfaceVariant,
-                          ),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: const Color(0x1E0D3823)),
+          boxShadow: const <BoxShadow>[
+            BoxShadow(
+              color: Color(0x140D3823),
+              blurRadius: 12,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: Stack(
+            fit: StackFit.expand,
+            children: <Widget>[
+              // বেস — ক্যামেরা ফিডের মতো গাঢ় ক্যানভাস
+              Container(color: const Color(0xFF0A0F0D)),
+              if (widget.bytes != null)
+                Positioned.fill(
+                  child: Image.memory(
+                    widget.bytes!,
+                    fit: BoxFit.cover,
+                    gaplessPlayback: true,
+                    errorBuilder: (_, _, _) => Center(
+                      child: Text(
+                        widget.imageName ?? '',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: const Color(0x88FFFFFF),
                         ),
                       ),
-                    )
-                  : _EmptyFinder(scheme: scheme, theme: theme),
-            ),
+                    ),
+                  ),
+                )
+              else
+                const _EmptyFinder(),
 
-            // গ্লো কর্নার অ্যাকসেন্ট
-            const _CornerAccent(alignment: Alignment.topLeft),
-            const _CornerAccent(alignment: Alignment.topRight),
-            const _CornerAccent(alignment: Alignment.bottomLeft),
-            const _CornerAccent(alignment: Alignment.bottomRight),
+              // হেয়ারলাইন রেটিকেল — ৪ কোনায় সবুজ ব্র্যাকেট
+              const Center(child: _Reticle()),
 
-            // স্ক্যান-লাইন (লোডিং অবস্থায়)
-            if (widget.loading)
-              AnimatedBuilder(
-                animation: _scan,
-                builder: (BuildContext context, Widget? child) {
-                  return Align(
-                    alignment: Alignment(0, _scan.value * 2 - 1),
-                    child: child,
-                  );
-                },
-                child: Container(
-                  height: 2.5,
-                  margin: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: <Color>[
-                        glow.withValues(alpha: 0.0),
-                        glow,
-                        glow.withValues(alpha: 0.0),
+              // স্ক্যান-লাইন (লোডিং অবস্থায়)
+              if (widget.loading)
+                AnimatedBuilder(
+                  animation: _scan,
+                  builder: (BuildContext context, Widget? child) {
+                    return Align(
+                      alignment: Alignment(0, _scan.value * 2 - 1),
+                      child: child,
+                    );
+                  },
+                  child: Container(
+                    height: 2.5,
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: <Color>[
+                          glow.withValues(alpha: 0.0),
+                          glow,
+                          glow.withValues(alpha: 0.0),
+                        ],
+                      ),
+                      boxShadow: <BoxShadow>[
+                        BoxShadow(
+                          color: glow.withValues(alpha: 0.9),
+                          blurRadius: 14,
+                        ),
                       ],
                     ),
-                    boxShadow: <BoxShadow>[
-                      BoxShadow(
-                        color: glow.withValues(alpha: 0.9),
-                        blurRadius: 14,
-                      ),
-                    ],
                   ),
                 ),
-              ),
 
-            // লোডিং ব্যাজ
-            if (widget.loading)
+              // উপরের HUD: ট্র্যাকিং চিপ
               Align(
-                alignment: Alignment.bottomCenter,
+                alignment: Alignment.topLeft,
                 child: Container(
-                  margin: const EdgeInsets.only(bottom: 14),
+                  margin: const EdgeInsets.all(12),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
-                    vertical: 6,
+                    vertical: 5,
                   ),
                   decoration: BoxDecoration(
-                    color: scheme.surfaceContainerHigh.withValues(alpha: 0.9),
+                    color: const Color(0x73000000), // black/45
                     borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: const Color(0x33FFFFFF)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
-                      SizedBox(
-                        width: 12,
-                        height: 12,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: scheme.primary,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
+                      widget.loading
+                          ? SizedBox(
+                              width: 12,
+                              height: 12,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 1.8,
+                                color: const Color(0xFF34D399),
+                              ),
+                            )
+                          : Icon(
+                              Icons.sync_rounded,
+                              size: 13,
+                              color: const Color(0xFF34D399),
+                            ),
+                      const SizedBox(width: 6),
                       Text(
-                        'বিশ্লেষণ হচ্ছে...',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: scheme.primary,
-                          fontWeight: FontWeight.w700,
+                        widget.loading
+                            ? 'বিশ্লেষণ হচ্ছে...'
+                            : 'পাতার রোগ ট্র্যাক মোড',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFFFFFFFF),
                         ),
                       ),
                     ],
                   ),
                 ),
               ),
-          ],
+
+              // নিচের ফোকাস নির্দেশনা চিপ
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: Container(
+                  margin: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 9,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xBF000000), // black/75
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0x1AFFFFFF)),
+                  ),
+                  child: Row(
+                    children: <Widget>[
+                      Icon(
+                        Icons.center_focus_strong_rounded,
+                        size: 17,
+                        color: const Color(0xFF34D399),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          widget.bytes == null
+                              ? 'গাছের ছবি তুলুন বা আপলোড করুন — আক্রান্ত পাতা কেন্দ্রে রাখুন।'
+                              : 'আক্রান্ত পাতা বা কুঁড়িকে ফ্রেমের কেন্দ্রস্থলে স্থাপন করুন।',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            height: 1.45,
+                            color: Color(0xE6FFFFFF), // white/90
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _EmptyFinder extends StatelessWidget {
-  const _EmptyFinder({required this.scheme, required this.theme});
-
-  final ColorScheme scheme;
-  final ThemeData theme;
+/// Centered 4-bracket reticle + hairline guides, per the scanner design.
+class _Reticle extends StatelessWidget {
+  const _Reticle();
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: <Widget>[
-        Container(
-          width: 56,
-          height: 56,
-          decoration: BoxDecoration(
-            color: scheme.primary.withValues(alpha: 0.10),
-            shape: BoxShape.circle,
+    return SizedBox(
+      width: 218,
+      height: 218,
+      child: Stack(
+        children: <Widget>[
+          Align(
+            alignment: Alignment.topLeft,
+            child: _bracket(
+              border: const Border(
+                top: BorderSide(color: Color(0xFF22C55E), width: 2.6),
+                left: BorderSide(color: Color(0xFF22C55E), width: 2.6),
+              ),
+              radius: const BorderRadius.only(topLeft: Radius.circular(8)),
+            ),
           ),
-          child: Icon(
-            Icons.center_focus_strong_rounded,
-            color: scheme.primary,
-            size: 28,
+          Align(
+            alignment: Alignment.topRight,
+            child: _bracket(
+              border: const Border(
+                top: BorderSide(color: Color(0xFF22C55E), width: 2.6),
+                right: BorderSide(color: Color(0xFF22C55E), width: 2.6),
+              ),
+              radius: const BorderRadius.only(topRight: Radius.circular(8)),
+            ),
           ),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          'গাছের ছবি তুলুন বা আপলোড করুন',
-          textAlign: TextAlign.center,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w700,
+          Align(
+            alignment: Alignment.bottomLeft,
+            child: _bracket(
+              border: const Border(
+                bottom: BorderSide(color: Color(0xFF22C55E), width: 2.6),
+                left: BorderSide(color: Color(0xFF22C55E), width: 2.6),
+              ),
+              radius: const BorderRadius.only(bottomLeft: Radius.circular(8)),
+            ),
           ),
-        ),
-        const SizedBox(height: 5),
-        Text(
-          'পাতা, কান্ড বা আক্রান্ত অংশের ক্লোজআপ ছবি দিন',
-          textAlign: TextAlign.center,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: scheme.onSurfaceVariant,
+          Align(
+            alignment: Alignment.bottomRight,
+            child: _bracket(
+              border: const Border(
+                bottom: BorderSide(color: Color(0xFF22C55E), width: 2.6),
+                right: BorderSide(color: Color(0xFF22C55E), width: 2.6),
+              ),
+              radius: const BorderRadius.only(bottomRight: Radius.circular(8)),
+            ),
           ),
-        ),
-      ],
+          // কেন্দ্র ফোকাস ডট
+          Center(
+            child: Container(
+              width: 7,
+              height: 7,
+              decoration: const BoxDecoration(
+                color: Color(0xFF22C55E),
+                shape: BoxShape.circle,
+                boxShadow: <BoxShadow>[
+                  BoxShadow(color: Color(0x5922C55E), blurRadius: 8),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _bracket({required Border border, required BorderRadius radius}) {
+    // No outer glow here: the box shadow would bleed through the
+    // transparent interior and make the brackets look filled.
+    return Container(
+      width: 30,
+      height: 30,
+      decoration: BoxDecoration(border: border, borderRadius: radius),
     );
   }
 }
 
-class _CornerAccent extends StatelessWidget {
-  const _CornerAccent({required this.alignment});
-
-  final Alignment alignment;
+class _EmptyFinder extends StatelessWidget {
+  const _EmptyFinder();
 
   @override
   Widget build(BuildContext context) {
-    final Color glow = AppTheme.glow.withValues(alpha: 0.5);
-
-    return Align(
-      alignment: alignment,
-      child: Container(
-        width: 30,
-        height: 30,
-        margin: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          border: Border(
-            top: alignment.y < 0
-                ? const BorderSide(color: AppTheme.glow, width: 2.2)
-                : BorderSide.none,
-            bottom: alignment.y > 0
-                ? const BorderSide(color: AppTheme.glow, width: 2.2)
-                : BorderSide.none,
-            left: alignment.x < 0
-                ? const BorderSide(color: AppTheme.glow, width: 2.2)
-                : BorderSide.none,
-            right: alignment.x > 0
-                ? const BorderSide(color: AppTheme.glow, width: 2.2)
-                : BorderSide.none,
+    // The viewfinder canvas is always dark (camera feed look), so the
+    // empty state uses fixed light-on-dark colors.
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Container(
+            width: 56,
+            height: 56,
+            decoration: const BoxDecoration(
+              color: Color(0x1A22C55E),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.center_focus_strong_rounded,
+              color: Color(0xFF34D399),
+              size: 28,
+            ),
           ),
-          boxShadow: <BoxShadow>[BoxShadow(color: glow, blurRadius: 10)],
-        ),
+          const SizedBox(height: 12),
+          Text(
+            'গাছের ছবি তুলুন বা আপলোড করুন',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 13,
+              height: 1.5,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFFFFFFFF).withValues(alpha: 0.9),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'পাতা, কান্ড বা আক্রান্ত অংশের ক্লোজআপ ছবি দিন',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 11,
+              color: const Color(0xFFFFFFFF).withValues(alpha: 0.6),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -693,6 +865,7 @@ class _ScanToolbar extends StatelessWidget {
     required this.onGallery,
     required this.onCamera,
     required this.onScan,
+    required this.onHistory,
   });
 
   final bool loading;
@@ -700,13 +873,17 @@ class _ScanToolbar extends StatelessWidget {
   final VoidCallback onGallery;
   final VoidCallback onCamera;
   final VoidCallback onScan;
+  final VoidCallback onHistory;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme scheme = theme.colorScheme;
 
+    // Design: [gallery] [camera] ( shutter ) [history] — square icon tiles
+    // with labels below, glowing emerald shutter in the middle.
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: <Widget>[
         _ToolbarTile(
           scheme: scheme,
@@ -715,7 +892,7 @@ class _ScanToolbar extends StatelessWidget {
           label: 'গ্যালারি',
           onTap: loading ? null : onGallery,
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
         _ToolbarTile(
           scheme: scheme,
           theme: theme,
@@ -723,58 +900,73 @@ class _ScanToolbar extends StatelessWidget {
           label: 'ক্যামেরা',
           onTap: loading ? null : onCamera,
         ),
-        const SizedBox(width: 14),
-        GestureDetector(
-          onTap: (!loading && hasImage) ? onScan : null,
-          child: AnimatedScale(
-            scale: (!loading && hasImage) ? 1.0 : 0.94,
-            duration: const Duration(milliseconds: 140),
-            child: Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: const LinearGradient(
-                  colors: AppTheme.accentGradient,
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                boxShadow: (loading || hasImage)
-                    ? <BoxShadow>[
-                        BoxShadow(
-                          color: AppTheme.glow.withValues(alpha: 0.55),
-                          blurRadius: 26,
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Center(
-                child: Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: scheme.surfaceContainerLowest,
+        Expanded(
+          child: GestureDetector(
+            onTap: (!loading && hasImage) ? onScan : null,
+            child: Column(
+              children: <Widget>[
+                AnimatedScale(
+                  scale: (!loading && hasImage) ? 1.0 : 0.94,
+                  duration: const Duration(milliseconds: 140),
+                  child: Container(
+                    width: 62,
+                    height: 62,
+                    margin: const EdgeInsets.symmetric(vertical: 2),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: <Color>[Color(0xFF16A34A), Color(0xFF15803D)],
+                      ),
+                      border: Border.all(color: Colors.white, width: 3),
+                      boxShadow: (loading || hasImage)
+                          ? <BoxShadow>[
+                              BoxShadow(
+                                color: const Color(0x7316A34A),
+                                blurRadius: 26,
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Center(
+                      child: loading
+                          ? const Padding(
+                              padding: EdgeInsets.all(14),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.4,
+                                color: Color(0xFFFFFFFF),
+                              ),
+                            )
+                          : Icon(
+                              Icons.center_focus_strong_rounded,
+                              size: 24,
+                              color: (hasImage
+                                  ? const Color(0xFFFFFFFF)
+                                  : const Color(0xB3FFFFFF)),
+                            ),
+                    ),
                   ),
-                  child: loading
-                      ? Padding(
-                          padding: const EdgeInsets.all(14),
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.4,
-                            color: scheme.primary,
-                          ),
-                        )
-                      : Icon(
-                          Icons.center_focus_strong_rounded,
-                          size: 26,
-                          color: (hasImage
-                              ? scheme.primary
-                              : scheme.onSurfaceVariant),
-                        ),
                 ),
-              ),
+                const SizedBox(height: 3),
+                Text(
+                  'স্ক্যান করুন',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: scheme.primary,
+                  ),
+                ),
+              ],
             ),
           ),
+        ),
+        const SizedBox(width: 10),
+        _ToolbarTile(
+          scheme: scheme,
+          theme: theme,
+          icon: Icons.history_rounded,
+          label: 'হিস্ট্রি',
+          onTap: onHistory,
         ),
       ],
     );
@@ -798,36 +990,53 @@ class _ToolbarTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          height: 58,
-          decoration: BoxDecoration(
-            color: scheme.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: scheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(10),
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
+    final bool isLight = theme.brightness == Brightness.light;
+
+    // Design: rounded-2xl bordered tile with an emerald icon + tiny label.
+    return GestureDetector(
+      onTap: onTap,
+      child: SizedBox(
+        width: 64,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                color: isLight ? Colors.white : scheme.surfaceContainerHigh,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: isLight
+                      ? const Color(0xFFD1E7D8)
+                      : scheme.outline.withValues(alpha: 0.5),
                 ),
-                child: Icon(icon, size: 18, color: scheme.primary),
+                boxShadow: isLight
+                    ? const <BoxShadow>[
+                        BoxShadow(color: Color(0x0A0D3823), blurRadius: 5),
+                      ]
+                    : null,
               ),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+              child: Icon(
+                icon,
+                size: 21,
+                color: isLight ? const Color(0xFF047857) : scheme.primary,
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w600,
+                color: isLight
+                    ? const Color(0xFF4A6B57)
+                    : scheme.onSurfaceVariant,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -850,6 +1059,7 @@ class _RecentScans extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme scheme = theme.colorScheme;
+    final bool isLight = theme.brightness == Brightness.light;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -859,7 +1069,7 @@ class _RecentScans extends StatelessWidget {
             Icon(Icons.history_rounded, size: 17, color: scheme.primary),
             const SizedBox(width: 7),
             Text(
-              'সাম্প্রতিক শনাক্তকরণ',
+              'পূর্ববর্তী স্ক্যান হিস্ট্রি',
               style: theme.textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.w800,
               ),
@@ -871,7 +1081,7 @@ class _RecentScans extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 6),
                 visualDensity: VisualDensity.compact,
               ),
-              child: const Text('সাভ করা ফলাফল দেখুন'),
+              child: const Text('সব দেখুন'),
             ),
           ],
         ),
@@ -883,37 +1093,53 @@ class _RecentScans extends StatelessWidget {
               onTap: () => onOpenEntry(entry),
               borderRadius: BorderRadius.circular(12),
               child: Ink(
+                // Design: white row card with sage border + chevron.
                 decoration: BoxDecoration(
-                  color: scheme.surfaceContainer,
+                  color: isLight ? Colors.white : scheme.surfaceContainer,
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isLight
+                        ? const Color(0xFFD1E7DD)
+                        : scheme.outline.withValues(alpha: 0.5),
+                  ),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(10),
                   child: Row(
                     children: <Widget>[
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Container(
-                          width: 44,
-                          height: 44,
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: isLight
+                                ? const Color(0xFFD6EBD9)
+                                : scheme.outline.withValues(alpha: 0.4),
+                          ),
                           color: scheme.surfaceContainerHighest,
-                          child: entry.thumbnailBase64.isEmpty
-                              ? Icon(
-                                  Icons.spa_outlined,
-                                  color: scheme.tertiary,
-                                  size: 20,
-                                )
-                              : Image.memory(
-                                  base64Decode(entry.thumbnailBase64),
-                                  fit: BoxFit.cover,
-                                  gaplessPlayback: true,
-                                  errorBuilder: (_, _, _) => Icon(
-                                    Icons.spa_outlined,
-                                    color: scheme.tertiary,
-                                    size: 20,
-                                  ),
-                                ),
                         ),
+                        clipBehavior: Clip.antiAlias,
+                        child: entry.thumbnailBase64.isEmpty
+                            ? Icon(
+                                Icons.spa_outlined,
+                                color: isLight
+                                    ? const Color(0xFF047857)
+                                    : scheme.tertiary,
+                                size: 20,
+                              )
+                            : Image.memory(
+                                base64Decode(entry.thumbnailBase64),
+                                fit: BoxFit.cover,
+                                gaplessPlayback: true,
+                                errorBuilder: (_, _, _) => Icon(
+                                  Icons.spa_outlined,
+                                  color: isLight
+                                      ? const Color(0xFF047857)
+                                      : scheme.tertiary,
+                                  size: 20,
+                                ),
+                              ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
@@ -924,15 +1150,23 @@ class _RecentScans extends StatelessWidget {
                               firstLine.isEmpty ? 'শনাক্তকরণ ফলাফল' : firstLine,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.bodyMedium?.copyWith(
+                              style: TextStyle(
+                                fontSize: 13,
                                 fontWeight: FontWeight.w700,
+                                color: isLight
+                                    ? const Color(0xFF0A2E18)
+                                    : scheme.onSurface,
                               ),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               bengaliTimestamp(entry.createdAt),
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: scheme.onSurfaceVariant,
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w500,
+                                color: isLight
+                                    ? const Color(0xFF4A6B57)
+                                    : scheme.onSurfaceVariant,
                               ),
                             ),
                           ],
@@ -1031,7 +1265,7 @@ class _PlantHistoryScreenState extends State<PlantHistoryScreen> {
                   SizedBox(height: 12),
                   Text('এখনো কোনো ফলাফল সাভ হয়নি'),
                   SizedBox(height: 4),
-                  Text('গাছের ডাক্তারে বিশ্লেষণ করলে ফলাফল এখানে জমা হবে'),
+                  Text('উদ্ভিদ ডাক্তারে বিশ্লেষণ করলে ফলাফল এখানে জমা হবে'),
                 ],
               ),
             )
@@ -1182,6 +1416,35 @@ class _HistoryCard extends StatelessWidget {
   }
 }
 
+/// Web-প্রিভিউ হ্যাচ-এর মক ডায়াগনোসিস (ডিজাইনের মতো সামগ্রী)।
+const String _demoReportJson =
+    '{"plantName":"লেবু গাছ","diseaseTitle":"পাতায় ছত্রাক ও ক্লোরোসিস",'
+    '"latinName":"Fungal Leaf Blight & Micro-nutrient Deficiency",'
+    '"confidencePercent":97.8,'
+    '"observations":"পাতায় ছোট ছোট কালো দাগ, পাতার কিনারা পুড়ে যাওয়া ভাব ও '
+    'অনুখাদ্যের ঘাটতি পরিলক্ষিত হয়েছে।",'
+    '"caution":"গাছের গোড়ায় অতিরিক্ত পানি জমতে দেবেন না, ড্রেনেজ ছিদ্র ৩-৪টি '
+    'নিশ্চিত করুন। টবের গোড়া স্যাঁতস্যাঁতে থাকলে ছত্রাক দ্রুত বংশবৃদ্ধি করে।",'
+    '"duration":"২৫ দিন চক্র","sprayInterval":"১৫ দিনে ১ বার",'
+    '"cureRate":"৯২% নিরাময় হার",'
+    '"steps":['
+    '{"title":"ধাপ ১: ফাঙ্গিসাইড স্প্রে","badge":"ছত্রাক দমন",'
+    '"medicine":"ম্যানসার + নিম তেল মিশ্রণ",'
+    '"howToDo":"১ চামচ নিমতেল + ১ চামচ ম্যানসার + ২ টাকার শ্যাম্পু, ২ লিটার পানিতে '
+    'মিশিয়ে স্প্রে করুন।","dosage":"১ চামচ / ২ লিটার","frequency":"১৫ দিনে ১ বার",'
+    '"tip":"পাতার উভয় পিঠে স্প্রে করুন","timing":"বিকালে প্রযোজ্য"},'
+    '{"title":"ধাপ ২: অনুখাদ্য ও সার প্রয়োগ","badge":"পুষ্টি ঘাটতি পূরণ",'
+    '"medicine":"ইউরিয়া + জিংক সালফেট",'
+    '"howToDo":"হাফ ড্রাম সাইজের টবে ৪ মুঠ, ছোট টবে ২ মুঠ করে প্রয়োগ করুন।",'
+    '"dosage":"৪ মুঠ / টব","frequency":"২৫ দিনে ১ বার",'
+    '"tip":"টবের কিনারা ঘেঁষে গোল নালা কেটে দিন","timing":"সকালে প্রযোজ্য"},'
+    '{"title":"ধাপ ৩: প্রতিরোধমূলক যত্ন","badge":"প্রতিরোধ",'
+    '"medicine":"ট্রাইকোডার্মা পাউডার",'
+    '"howToDo":"গোড়ার মাটিতে মেশান ও পানি দেওয়ার রুটিন ঠিক রাখুন।",'
+    '"dosage":"১ গ্রাম / টব","frequency":"মাসে ১ বার",'
+    '"tip":"আক্রান্ত পাতা তুলে ফেলুন","timing":""}'
+    ']}';
+
 class _FullResultScreen extends StatelessWidget {
   const _FullResultScreen({required this.text});
 
@@ -1191,28 +1454,34 @@ class _FullResultScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme scheme = theme.colorScheme;
+    final DiagnosisReport? report = DiagnosisReport.tryParse(text);
 
     return Scaffold(
       appBar: AppBar(title: const Text('সাভ করা ফলাফল')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
         children: <Widget>[
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: theme.cardTheme.color,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: theme.dividerColor),
-            ),
-            child: SelectableText(
-              text,
-              style: TextStyle(
-                fontSize: 15,
-                height: 1.8,
-                color: scheme.onSurface,
+          if (report != null) ...<Widget>[
+            DiagnosisReportHeader(reportId: '', rawText: text),
+            const SizedBox(height: 12),
+            DiagnosisReportView(report: report, rawText: text),
+          ] else
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: theme.cardTheme.color,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: scheme.outline),
+              ),
+              child: SelectableText(
+                text,
+                style: TextStyle(
+                  fontSize: 15,
+                  height: 1.8,
+                  color: scheme.onSurface,
+                ),
               ),
             ),
-          ),
         ],
       ),
     );

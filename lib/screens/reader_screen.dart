@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../models/guide.dart';
 import '../state/app_controller.dart';
-import '../theme/app_theme.dart';
 import '../widgets/guide_block_view.dart';
 import '../widgets/inline_text.dart';
 
@@ -107,11 +106,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
       ),
       body: Column(
         children: <Widget>[
-          _ProgressBar(
-            current: _current,
-            total: steps.length,
-            onSelect: _goTo,
-          ),
+          _ProgressBar(current: _current, total: steps.length, onSelect: _goTo),
           Expanded(
             child: PageView.builder(
               controller: _pageController,
@@ -123,25 +118,18 @@ class _ReaderScreenState extends State<ReaderScreen> {
               itemBuilder: (BuildContext context, int index) {
                 final GuideStep step = steps[index];
                 return SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(18, 8, 18, 26),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      _StepHeader(
-                        stepNumber: index + 1,
-                        total: steps.length,
-                        title: step.title,
-                        group: step.group == widget.chapter.title
-                            ? ''
-                            : step.group,
-                      ),
-                      const SizedBox(height: 16),
-                      GuideBlockView(
-                        blocks: step.blocks,
-                        fontScale: fontScale,
-                      ),
-                      const SizedBox(height: 30),
-                    ],
+                  padding: const EdgeInsets.fromLTRB(16, 6, 16, 26),
+                  child: _StepCard(
+                    header: _StepHeader(
+                      stepNumber: index + 1,
+                      total: steps.length,
+                      title: step.title,
+                      group: step.group == widget.chapter.title
+                          ? ''
+                          : step.group,
+                    ),
+                    fontScale: fontScale,
+                    blocks: step.blocks,
                   ),
                 );
               },
@@ -233,7 +221,9 @@ class _ReaderScreenState extends State<ReaderScreen> {
                         step.title,
                         style: TextStyle(
                           fontSize: 14,
-                          fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                          fontWeight: active
+                              ? FontWeight.w700
+                              : FontWeight.w500,
                           color: theme.colorScheme.onSurface,
                         ),
                       ),
@@ -268,8 +258,8 @@ class _ReaderScreenState extends State<ReaderScreen> {
                   Text(
                     'টেক্সট সাইজ',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Row(
@@ -314,16 +304,32 @@ class _ProgressBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme scheme = Theme.of(context).colorScheme;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
     final double progress = total <= 1 ? 1 : (current + 1) / total;
 
+    // Design's status row: gray label left, emerald count right.
     return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 2, 18, 10),
+      padding: const EdgeInsets.fromLTRB(18, 4, 18, 10),
       child: Column(
         children: <Widget>[
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
-            child: LinearProgressIndicator(value: progress, minHeight: 6),
+            child: TweenAnimationBuilder<double>(
+              tween: Tween<double>(begin: 0, end: progress),
+              duration: const Duration(milliseconds: 360),
+              curve: Curves.easeOutCubic,
+              builder: (BuildContext context, double value, _) {
+                return LinearProgressIndicator(
+                  value: value,
+                  minHeight: 5,
+                  backgroundColor: theme.brightness == Brightness.light
+                      ? const Color(0xFFDCFCE7)
+                      : scheme.surfaceContainerHighest,
+                  color: const Color(0xFF16A34A),
+                );
+              },
+            ),
           ),
           const SizedBox(height: 6),
           Row(
@@ -332,20 +338,77 @@ class _ProgressBar extends StatelessWidget {
               Text(
                 'ধাপ ${current + 1} / $total',
                 style: TextStyle(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w700,
-                  color: scheme.onSurfaceVariant,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: theme.brightness == Brightness.light
+                      ? const Color(0xFF4A6B57)
+                      : scheme.onSurfaceVariant,
                 ),
               ),
               Text(
                 '${(progress * 100).round()}% সম্পন্ন',
                 style: TextStyle(
-                  fontSize: 11.5,
-                  color: scheme.onSurfaceVariant,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: theme.brightness == Brightness.light
+                      ? const Color(0xFF065F46)
+                      : scheme.primary,
                 ),
               ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// White remedy-card wrapper around each step, matching the directory
+/// design's `rounded-xl bg-white border-[#d1e7dd] p-3.5 shadow-sm` card.
+class _StepCard extends StatelessWidget {
+  const _StepCard({
+    required this.header,
+    required this.blocks,
+    required this.fontScale,
+  });
+
+  final Widget header;
+  final List<GuideBlock> blocks;
+  final double fontScale;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
+    final bool isLight = theme.brightness == Brightness.light;
+
+    return Container(
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: isLight ? Colors.white : scheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isLight
+              ? const Color(0xFFD1E7DD)
+              : scheme.outline.withValues(alpha: 0.6),
+        ),
+        boxShadow: isLight
+            ? const <BoxShadow>[
+                BoxShadow(
+                  // Level-1 ambient card shadow
+                  color: Color(0x0A0D3823),
+                  blurRadius: 10,
+                  offset: Offset(0, 3),
+                ),
+              ]
+            : null,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          header,
+          const SizedBox(height: 12),
+          GuideBlockView(blocks: blocks, fontScale: fontScale),
         ],
       ),
     );
@@ -369,82 +432,118 @@ class _StepHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme scheme = theme.colorScheme;
+    final bool isLight = theme.brightness == Brightness.light;
 
+    // Directory-card header: icon tile + title/subtitle + category pill.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              width: 38,
+              height: 38,
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: <Color>[AppTheme.seed, AppTheme.leaf],
+                color: isLight
+                    ? const Color(0xFFF5FBF7)
+                    : scheme.primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: isLight
+                      ? const Color(0xFFD6EBD9)
+                      : scheme.outline.withValues(alpha: 0.5),
                 ),
-                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.eco_rounded,
+                size: 20,
+                color: isLight ? const Color(0xFF047857) : scheme.primary,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  InlineText(
+                    title,
+                    style: TextStyle(
+                      fontSize: 15.5,
+                      height: 1.42,
+                      fontWeight: FontWeight.w700,
+                      color: isLight
+                          ? const Color(0xFF0A2E18)
+                          : scheme.onSurface,
+                    ),
+                  ),
+                  if (group.isNotEmpty) ...<Widget>[
+                    const SizedBox(height: 2),
+                    Row(
+                      children: <Widget>[
+                        Icon(
+                          Icons.folder_open_rounded,
+                          size: 12,
+                          color: isLight
+                              ? const Color(0xFF4A6B57)
+                              : scheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 5),
+                        Flexible(
+                          child: Text(
+                            group,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: isLight
+                                  ? const Color(0xFF4A6B57)
+                                  : scheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            // "ধাপ N" pill, like the design's category badge.
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: isLight
+                    ? const Color(0xFFDCFCE7)
+                    : scheme.primaryContainer,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: isLight
+                      ? const Color(0xFFBBF7D0)
+                      : scheme.primary.withValues(alpha: 0.4),
+                ),
               ),
               child: Text(
                 'ধাপ $stepNumber',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 11.5,
+                style: TextStyle(
+                  fontSize: 10,
                   fontWeight: FontWeight.w700,
+                  color: isLight
+                      ? const Color(0xFF065F46)
+                      : scheme.onPrimaryContainer,
                 ),
               ),
             ),
-            if (group.isNotEmpty) ...<Widget>[
-              const SizedBox(width: 8),
-              Flexible(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: scheme.secondaryContainer.withValues(alpha: 0.7),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: scheme.secondary.withValues(alpha: 0.35),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      Icon(
-                        Icons.folder_open_rounded,
-                        size: 13,
-                        color: scheme.onSecondaryContainer,
-                      ),
-                      const SizedBox(width: 5),
-                      Flexible(
-                        child: Text(
-                          group,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: scheme.onSecondaryContainer,
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
           ],
         ),
-        const SizedBox(height: 10),
-        Text(
-          title,
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w700,
-            height: 1.45,
-          ),
+        const SizedBox(height: 12),
+        Divider(
+          color: isLight
+              ? const Color(0xFFE2EFE7)
+              : scheme.outlineVariant.withValues(alpha: 0.5),
+          thickness: 1,
         ),
-        const SizedBox(height: 14),
-        Divider(color: scheme.outlineVariant.withValues(alpha: 0.7)),
       ],
     );
   }

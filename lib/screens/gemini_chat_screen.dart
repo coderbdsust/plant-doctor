@@ -6,7 +6,12 @@ import '../theme/app_theme.dart';
 import '../widgets/inline_text.dart';
 
 class _ChatMessage {
-  _ChatMessage({required this.text, required this.isUser, this.citations = const <GeminiCitation>[], this.error = false});
+  _ChatMessage({
+    required this.text,
+    required this.isUser,
+    this.citations = const <GeminiCitation>[],
+    this.error = false,
+  });
 
   final String text;
   final bool isUser;
@@ -79,27 +84,33 @@ class _GeminiChatScreenState extends State<GeminiChatScreen> {
 
       if (!mounted) return;
       setState(() {
-        _messages.add(_ChatMessage(
-          text: reply.text,
-          isUser: false,
-          citations: reply.citations,
-        ));
+        _messages.add(
+          _ChatMessage(
+            text: reply.text,
+            isUser: false,
+            citations: reply.citations,
+          ),
+        );
         _loading = false;
       });
     } on GeminiException catch (e) {
       if (!mounted) return;
       setState(() {
-        _messages.add(_ChatMessage(text: e.message, isUser: false, error: true));
+        _messages.add(
+          _ChatMessage(text: e.message, isUser: false, error: true),
+        );
         _loading = false;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _messages.add(_ChatMessage(
-          text: 'উত্তর পেতে সমস্যা হয়েছে: $e',
-          isUser: false,
-          error: true,
-        ));
+        _messages.add(
+          _ChatMessage(
+            text: 'উত্তর পেতে সমস্যা হয়েছে: $e',
+            isUser: false,
+            error: true,
+          ),
+        );
         _loading = false;
       });
     }
@@ -137,15 +148,20 @@ class _GeminiChatScreenState extends State<GeminiChatScreen> {
                 ),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.auto_awesome, color: Colors.white, size: 19),
+              child: const Icon(
+                Icons.auto_awesome,
+                color: Colors.white,
+                size: 19,
+              ),
             ),
             const SizedBox(width: 10),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                const Text('জেমিনি সহকারী',
-                    style: TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w700)),
+                const Text(
+                  'জেমিনি সহকারী',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                ),
                 Text(
                   widget.controller.settings.useGoogleSearch
                       ? 'গুগল সার্চ সহ'
@@ -191,11 +207,7 @@ class _GeminiChatScreenState extends State<GeminiChatScreen> {
                     },
                   ),
           ),
-          _Composer(
-            controller: _input,
-            loading: _loading,
-            onSend: _send,
-          ),
+          _Composer(controller: _input, loading: _loading, onSend: _send),
         ],
       ),
     );
@@ -222,8 +234,8 @@ class _GeminiChatScreenState extends State<GeminiChatScreen> {
                   Text(
                     'মডেল ও সেটিংস',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   const SizedBox(height: 14),
                   DropdownButtonFormField<String>(
@@ -236,7 +248,10 @@ class _GeminiChatScreenState extends State<GeminiChatScreen> {
                       for (final model in GeminiService.availableModels)
                         DropdownMenuItem<String>(
                           value: model,
-                          child: Text(model, style: const TextStyle(fontSize: 14)),
+                          child: Text(
+                            model,
+                            style: const TextStyle(fontSize: 14),
+                          ),
                         ),
                     ],
                     onChanged: (String? value) {
@@ -339,7 +354,10 @@ class _EmptyChat extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme scheme = theme.colorScheme;
+    final bool isLight = theme.brightness == Brightness.light;
 
+    // Empty-state hero: mint tile with emerald glyph (light) matching the
+    // clinical design language.
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 30, 20, 20),
       children: <Widget>[
@@ -348,12 +366,34 @@ class _EmptyChat extends StatelessWidget {
             width: 76,
             height: 76,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: <Color>[AppTheme.seed, AppTheme.moss],
+              gradient: isLight
+                  ? const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: <Color>[Color(0xFFDCFCE7), Color(0xFFF0FDF4)],
+                    )
+                  : const LinearGradient(
+                      colors: <Color>[AppTheme.seed, AppTheme.moss],
+                    ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isLight ? const Color(0xFFBBF7D0) : Colors.transparent,
               ),
-              borderRadius: BorderRadius.circular(12),
+              boxShadow: isLight
+                  ? <BoxShadow>[
+                      BoxShadow(
+                        color: const Color(0x1416A34A),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
+                      ),
+                    ]
+                  : null,
             ),
-            child: const Icon(Icons.auto_awesome, color: Colors.white, size: 36),
+            child: Icon(
+              Icons.auto_awesome,
+              color: isLight ? const Color(0xFF15803D) : Colors.white,
+              size: 34,
+            ),
           ),
         ),
         const SizedBox(height: 18),
@@ -387,35 +427,72 @@ class _EmptyChat extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 8),
             child: Material(
               color: theme.cardTheme.color,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
               child: InkWell(
                 onTap: hasKey ? () => onSuggestion(label) : null,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 13,
+                  ),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: theme.dividerColor),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: theme.brightness == Brightness.light
+                          ? const Color(0xFFD1E7D8)
+                          : scheme.outline.withValues(alpha: 0.5),
+                    ),
                   ),
                   child: Row(
                     children: <Widget>[
-                      Icon(icon, size: 18, color: scheme.primary),
+                      Container(
+                        width: 30,
+                        height: 30,
+                        decoration: BoxDecoration(
+                          color: theme.brightness == Brightness.light
+                              ? const Color(0xFFF5FBF7)
+                              : scheme.primary.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: theme.brightness == Brightness.light
+                                ? const Color(0xFFD6EBD9)
+                                : scheme.primary.withValues(alpha: 0.25),
+                          ),
+                        ),
+                        child: Icon(
+                          icon,
+                          size: 15,
+                          color: theme.brightness == Brightness.light
+                              ? const Color(0xFF047857)
+                              : scheme.primary,
+                        ),
+                      ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           label,
-                          style: const TextStyle(fontSize: 14),
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w500,
+                            color: theme.brightness == Brightness.light
+                                ? const Color(0xFF0A2E18)
+                                : scheme.onSurface,
+                          ),
                         ),
                       ),
-                      Icon(Icons.arrow_forward_ios,
-                          size: 13, color: scheme.onSurfaceVariant),
+                      Icon(
+                        Icons.arrow_forward_ios,
+                        size: 13,
+                        color: scheme.onSurfaceVariant,
+                      ),
                     ],
                   ),
                 ),
               ),
             ),
-          ),      ],
+          ),
+      ],
     );
   }
 }
@@ -429,13 +506,13 @@ class _Bubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme scheme = theme.colorScheme;
-
+    final bool isLight = theme.brightness == Brightness.light;
     final bool isUser = message.isUser;
     final Color bubbleColor = message.error
         ? scheme.errorContainer.withValues(alpha: 0.5)
         : isUser
-            ? scheme.primary
-            : theme.cardTheme.color!;
+        ? scheme.primary
+        : theme.cardTheme.color!;
 
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
@@ -453,9 +530,22 @@ class _Bubble extends StatelessWidget {
             bottomLeft: Radius.circular(isUser ? 16 : 4),
             bottomRight: Radius.circular(isUser ? 4 : 16),
           ),
-          border: isUser || message.error
+          border: (isUser || message.error)
               ? null
-              : Border.all(color: theme.dividerColor),
+              : Border.all(
+                  color: isLight
+                      ? const Color(0xFFD1E7D8)
+                      : scheme.outline.withValues(alpha: 0.5),
+                ),
+          boxShadow: (isLight && !isUser && !message.error)
+              ? const <BoxShadow>[
+                  BoxShadow(
+                    color: Color(0x0A0D3823),
+                    blurRadius: 8,
+                    offset: Offset(0, 2),
+                  ),
+                ]
+              : null,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -468,8 +558,8 @@ class _Bubble extends StatelessWidget {
                 color: message.error
                     ? scheme.onErrorContainer
                     : isUser
-                        ? scheme.onPrimary
-                        : scheme.onSurface,
+                    ? scheme.onPrimary
+                    : scheme.onSurface,
               ),
             ),
             if (message.citations.isNotEmpty) ...<Widget>[
@@ -477,8 +567,15 @@ class _Bubble extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: scheme.surfaceContainerHighest.withValues(alpha: 0.6),
+                  color: theme.brightness == Brightness.light
+                      ? const Color(0xFFF5FBF7)
+                      : scheme.surfaceContainerHighest.withValues(alpha: 0.6),
                   borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: theme.brightness == Brightness.light
+                        ? const Color(0xFFD6EBD9)
+                        : scheme.outline.withValues(alpha: 0.4),
+                  ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -528,7 +625,8 @@ class _TypingBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme scheme = Theme.of(context).colorScheme;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
 
     return Align(
       alignment: Alignment.centerLeft,
@@ -536,9 +634,13 @@ class _TypingBubble extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: Theme.of(context).cardTheme.color,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: Theme.of(context).dividerColor),
+          color: theme.cardTheme.color,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: theme.brightness == Brightness.light
+                ? const Color(0xFFD1E7D8)
+                : scheme.outline.withValues(alpha: 0.5),
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -600,7 +702,9 @@ class _Composer extends StatelessWidget {
                 decoration: const InputDecoration(
                   hintText: 'প্রশ্ন লিখুন...',
                   contentPadding: EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 12),
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                 ),
               ),
             ),
@@ -618,7 +722,7 @@ class _Composer extends StatelessWidget {
                     )
                   : const Icon(Icons.send_rounded, size: 20),
               style: IconButton.styleFrom(
-                backgroundColor: AppTheme.seed,
+                backgroundColor: scheme.primary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.all(13),
               ),
