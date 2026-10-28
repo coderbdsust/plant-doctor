@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 
-import 'screens/gemini_chat_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/reader_screen.dart';
 import 'screens/search_screen.dart';
 import 'screens/settings_screen.dart';
-import 'services/gemini_service.dart';
 import 'services/settings_service.dart';
-import 'services/web_search_service.dart';
 import 'state/app_controller.dart';
 import 'theme/app_theme.dart';
 import 'widgets/modern_motion.dart';
@@ -29,20 +26,10 @@ class NogorOronnoApp extends StatefulWidget {
 }
 
 class _NogorOronnoAppState extends State<NogorOronnoApp> {
-  final WebSearchService _webSearchService = WebSearchService();
-  final GeminiService _geminiService = GeminiService();
-
   @override
   void initState() {
     super.initState();
     widget.controller.load();
-  }
-
-  @override
-  void dispose() {
-    _webSearchService.dispose();
-    _geminiService.dispose();
-    super.dispose();
   }
 
   @override
@@ -65,8 +52,6 @@ class _NogorOronnoAppState extends State<NogorOronnoApp> {
           themeMode: themeMode,
           home: HomeShell(
             controller: widget.controller,
-            webSearchService: _webSearchService,
-            geminiService: _geminiService,
           ),
         );
       },
@@ -78,13 +63,9 @@ class HomeShell extends StatefulWidget {
   const HomeShell({
     super.key,
     required this.controller,
-    required this.webSearchService,
-    required this.geminiService,
   });
 
   final AppController controller;
-  final WebSearchService webSearchService;
-  final GeminiService geminiService;
 
   @override
   State<HomeShell> createState() => _HomeShellState();
@@ -111,17 +92,6 @@ class _HomeShellState extends State<HomeShell> {
     Navigator.of(context).push(
       FadeSlideRoute<void>(
         builder: (_) => SettingsScreen(controller: widget.controller),
-      ),
-    );
-  }
-
-  void _openAi() {
-    Navigator.of(context).push(
-      FadeSlideRoute<void>(
-        builder: (_) => GeminiChatScreen(
-          controller: widget.controller,
-          geminiService: widget.geminiService,
-        ),
       ),
     );
   }
@@ -158,15 +128,12 @@ class _HomeShellState extends State<HomeShell> {
         onOpenChapter: (chapter) => _openReader(chapter.index),
         onContinueReading: _continueReading,
         onOpenSearch: () => setState(() => _tab = 1),
-        onOpenAi: _openAi,
         onOpenSettings: _openSettings,
       ),
       SearchScreen(
         controller: widget.controller,
-        webSearchService: widget.webSearchService,
         onOpenStep: (chapter, step) =>
             _openReader(chapter.index, step: step.stepIndex),
-        onOpenAi: _openAi,
       ),
     ];
 

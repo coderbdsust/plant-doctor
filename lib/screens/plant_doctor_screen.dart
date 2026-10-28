@@ -229,7 +229,7 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
         ),
         actions: <Widget>[
           IconButton(
-            tooltip: 'সাভ করা ফলাফল',
+            tooltip: 'সেভ করা ফলাফল',
             onPressed: _openHistory,
             icon: const Icon(Icons.history_rounded),
           ),
@@ -386,8 +386,8 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
                   const SizedBox(width: 6),
                   Text(
                     _lastSaveOk!
-                        ? 'ফলাফল বুকমার্কে সাভ হয়েছে'
-                        : 'ফলাফল সাভ করা গেল না',
+                        ? 'ফলাফল বুকমার্কে সেভ হয়েছে'
+                        : 'ফলাফল সেভ করা গেল না',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: _lastSaveOk! ? scheme.primary : theme.hintColor,
                     ),
@@ -396,7 +396,7 @@ class _PlantDoctorScreenState extends State<PlantDoctorScreen> {
                   TextButton.icon(
                     onPressed: _openHistory,
                     icon: const Icon(Icons.history_rounded, size: 16),
-                    label: const Text('সাভ করা ফলাফল দেখুন'),
+                    label: const Text('সেভ করা ফলাফল দেখুন'),
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       visualDensity: VisualDensity.compact,
@@ -1043,6 +1043,54 @@ class _ToolbarTile extends StatelessWidget {
   }
 }
 
+/// Human-friendly one-line title from a saved result (parsed JSON or plain
+/// text): "গাছের নাম — রোগ/পোকা", e.g. "জাবা ফুল — পাতায় ছত্রাক"।
+String _entryDisplayTitle(PlantHistoryEntry entry) {
+  final DiagnosisReport? report = DiagnosisReport.tryParse(entry.resultText);
+  if (report != null) {
+    final List<String> parts = <String>[
+      if (report.plantName.isNotEmpty) report.plantName,
+      if (report.diseaseTitle.isNotEmpty) report.diseaseTitle,
+    ];
+    final String title = parts.join(' — ');
+    if (title.isNotEmpty) return title;
+  }
+  // Plain-text fallback: first meaningful line (brace prefixes removed).
+  final String firstLine = entry.resultText
+      .split('\n')
+      .map((String line) => line.trim())
+      .firstWhere((String line) => line.isNotEmpty && line != '{' && line != '}',
+          orElse: () => '');
+  return firstLine.replaceFirst(RegExp(r'^[\{,\s]*'), '').trim();
+}
+
+/// Short readable snippet for the history card list body.
+String _entryDisplaySnippet(PlantHistoryEntry entry, {int maxChars = 140}) {
+  final DiagnosisReport? report = DiagnosisReport.tryParse(entry.resultText);
+  String text = '';
+  if (report != null) {
+    text = report.observations.isNotEmpty
+        ? report.observations
+        : (report.caution.isNotEmpty
+            ? report.caution
+            : (report.plantName.isNotEmpty || report.diseaseTitle.isNotEmpty
+                ? <String>[
+                    if (report.plantName.isNotEmpty) report.plantName,
+                    if (report.diseaseTitle.isNotEmpty) report.diseaseTitle,
+                  ].join(' — ')
+                : ''));
+  }
+  if (text.isEmpty) {
+    // Strip JSON punctuation so raw output never reads like code.
+    text = entry.resultText
+        .replaceAll(RegExp(r'[{}\[\]"]'), '')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+  }
+  if (text.length > maxChars) text = '${text.substring(0, maxChars)}…';
+  return text;
+}
+
 /// ── সাম্প্রতিক শনাক্তকরণ (design: recent scans history) ──────────────
 class _RecentScans extends StatelessWidget {
   const _RecentScans({
@@ -1086,7 +1134,8 @@ class _RecentScans extends StatelessWidget {
           ],
         ),
         ...entries.take(3).map((PlantHistoryEntry entry) {
-          final String firstLine = entry.resultText.split('\n').first.trim();
+          final String firstLine =
+              _entryDisplayTitle(entry);
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: InkWell(
@@ -1220,7 +1269,7 @@ class _PlantHistoryScreenState extends State<PlantHistoryScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('সাভ করা ফলাফল'),
+        title: const Text('সেভ করা ফলাফল'),
         actions: <Widget>[
           if (_entries.isNotEmpty)
             IconButton(
@@ -1263,7 +1312,7 @@ class _PlantHistoryScreenState extends State<PlantHistoryScreen> {
                 children: <Widget>[
                   Icon(Icons.history_toggle_off_rounded, size: 48),
                   SizedBox(height: 12),
-                  Text('এখনো কোনো ফলাফল সাভ হয়নি'),
+                  Text('এখনো কোনো ফলাফল সেভ হয়নি'),
                   SizedBox(height: 4),
                   Text('উদ্ভিদ ডাক্তারে বিশ্লেষণ করলে ফলাফল এখানে জমা হবে'),
                 ],
@@ -1298,9 +1347,7 @@ class _HistoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme scheme = theme.colorScheme;
-    final String snippet = entry.resultText.length > 140
-        ? '${entry.resultText.substring(0, 140)}…'
-        : entry.resultText;
+    final String snippet = _entryDisplaySnippet(entry);
 
     return Material(
       color: theme.cardTheme.color,
@@ -1457,7 +1504,7 @@ class _FullResultScreen extends StatelessWidget {
     final DiagnosisReport? report = DiagnosisReport.tryParse(text);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('সাভ করা ফলাফল')),
+      appBar: AppBar(title: const Text('সেভ করা ফলাফল')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
         children: <Widget>[

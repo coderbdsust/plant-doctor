@@ -29,7 +29,6 @@ class HomeScreen extends StatefulWidget {
     required this.onOpenChapter,
     required this.onContinueReading,
     required this.onOpenSearch,
-    required this.onOpenAi,
     required this.onOpenSettings,
   });
 
@@ -37,7 +36,6 @@ class HomeScreen extends StatefulWidget {
   final void Function(GuideChapter chapter) onOpenChapter;
   final VoidCallback onContinueReading;
   final VoidCallback onOpenSearch;
-  final VoidCallback onOpenAi;
   final VoidCallback onOpenSettings;
 
   @override
@@ -95,7 +93,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   order: 0,
                   child: _TopBar(
                     onOpenSettings: widget.onOpenSettings,
-                    onOpenAi: widget.onOpenAi,
                   ),
                 ),
               ),
@@ -171,10 +168,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
 /// ── টপ বার: লোগো টাইল + টাইটেল + badge + actioncircle ──────────────────
 class _TopBar extends StatelessWidget {
-  const _TopBar({required this.onOpenSettings, required this.onOpenAi});
+  const _TopBar({required this.onOpenSettings});
 
   final VoidCallback onOpenSettings;
-  final VoidCallback onOpenAi;
 
   @override
   Widget build(BuildContext context) {
@@ -248,11 +244,6 @@ class _TopBar extends StatelessWidget {
                 ),
               ],
             ),
-          ),
-          _CircleIcon(
-            tooltip: 'জেমিনি AI',
-            icon: Icons.auto_awesome_outlined,
-            onTap: onOpenAi,
           ),
           _CircleIcon(
             tooltip: 'সেটিংস',
@@ -715,7 +706,7 @@ class _TipOfDayState extends State<_TipOfDay> {
             ),
           ),
           IconButton(
-            tooltip: 'সাভ',
+            tooltip: 'সেভ',
             onPressed: () => setState(() => _saved = !_saved),
             icon: Icon(
               _saved
